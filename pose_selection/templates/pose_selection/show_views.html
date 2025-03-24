@@ -1,0 +1,24 @@
+
+
+{% block title %}Upload Image - {{ pose_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">📸 Select a View for {{ pose_name }}</h2>
+
+    {% if views %}
+        <div class="list-group mt-4">
+            {% for view in views %}
+                <a href="{% url 'upload_image' pose_name=pose_name  %}" 
+                   class="list-group-item list-group-item-action">
+                    🖼️ {{ view.view }}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-center">❌ No views available for this pose.</p>
+    {% endif %}
+
+    <a href="{% url 'yoga_options' pose_name=pose_name %}" class="btn btn-secondary mt-4">⬅️ Back</a>
+</div>
+{% endblock %}

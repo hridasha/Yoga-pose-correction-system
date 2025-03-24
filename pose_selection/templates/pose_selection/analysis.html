@@ -1,0 +1,95 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Image</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">Yoga Pose Analysis</h1>
+        <hr class="my-4">
+    </div>
+
+    <!-- Pose Image -->
+    <div class="text-center mb-4">
+        <h5 class="fw-bold">Detected Pose with Keypoints</h5>
+        <img src="{{ feedback.image_url }}" alt="Annotated Pose" class="img-fluid rounded shadow-lg" style="max-width: 600px; border: 5px solid #f0f0f0;">
+    </div>
+
+    <!-- Pose Details -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">{{ feedback.pose_name }}</h4>
+                    <h5 class="text-muted">View: {{ feedback.classified_view }}</h5>
+                    <p class="mt-3"><strong>Best Match:</strong> 
+                        <span class="badge {% if feedback.best_match == 'Original Pose' %}bg-success{% else %}bg-info{% endif %}">
+                            {{ feedback.best_match }}
+                        </span>
+                    </p>
+                    <p class="mt-2"><strong>Average Error:</strong> 
+                        <span class="text-danger">{{ feedback.avg_error }}°</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Correction Suggestions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5>Pose Correction Suggestions</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for correction in feedback.corrections %}
+                        <li class="list-group-item list-group-item-action">
+                            <i class="bi bi-arrow-right-circle-fill text-warning me-2"></i> {{ correction }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Angle Error Details -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Angle Error Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Angle</th>
+                            <th>Detected (°)</th>
+                            <th>Ideal (°)</th>
+                            <th>Error (°)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for angle, details in feedback.errors.items %}
+                        <tr>
+                            <td>{{ angle }}</td>
+                            <td class="text-info">{{ details.detected }}°</td>
+                            <td class="text-success">{{ details.ideal }}°</td>
+                            <td class="text-danger">{{ details.error }}°</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

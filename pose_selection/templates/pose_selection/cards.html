@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="my-5 text-center">Yoga Pose Selection</h1>
+
+    <div class="row g-4">
+        {% for pose in poses %}
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <img src="/static/images/{{ pose.image }}" class="card-img-top" alt="{{ pose.name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ pose.name }}</h5>
+                    <p class="card-text">Choose this pose to get ideal angles and guidance.</p>
+                    <a href="#" class="btn btn-success">Select Pose</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

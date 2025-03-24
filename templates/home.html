@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mt-5">Yoga Pose Correction System</h1>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <img src="/static/images/realtime.jpg" class="card-img-top" alt="Real-Time Yoga">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Real-Time Yoga</h5>
+                    <p>Perform yoga live, get pose detection, and correction guidance.</p>
+                    <a href="{% url 'realtime' %}" class="btn btn-primary">Start Real-Time</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <img src="/static/images/cards.jpg" class="card-img-top" alt="Pose Selection">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Pose Selection</h5>
+                    <p>Choose a yoga pose and view to get ideal angles and guidance.</p>
+                    <a href="{% url 'pose-selection' %}" class="btn btn-primary">Select Pose</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
