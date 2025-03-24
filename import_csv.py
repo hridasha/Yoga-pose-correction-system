@@ -2,27 +2,20 @@ import os
 import django
 import pandas as pd
 
-# Set up Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ypc.settings")
 django.setup()
 
-# Import the model
 from pose_selection.models import YogaPoseIdealAngle
 
-# CSV path
 csv_file ="datasets\ideal_angles_mean_std_no_nan.csv"
 
-# Load the CSV into a DataFrame
 df = pd.read_csv(csv_file)
-
-# Iterate through the DataFrame and save both original and flipped data
 for _, row in df.iterrows():
     
-    # ✅ Import Original Pose
     YogaPoseIdealAngle.objects.create(
-        pose_name=row['Folder Name'],     # Same name for original and flipped
+        pose_name=row['Folder Name'],    
         view=row['View'],
-        is_flipped=False,  # Original data
+        is_flipped=False,  
 
         # Left-side angles
         left_elbow_angle_mean=row['Left_Elbow_Angle_mean'],
@@ -49,11 +42,10 @@ for _, row in df.iterrows():
         right_ankle_angle_std=row['Right_Ankle_Angle_std'],
     )
 
-    # ✅ Import Flipped Pose (same pose name)
     YogaPoseIdealAngle.objects.create(
-        pose_name=row['Folder Name'],     # SAME POSE NAME
+        pose_name=row['Folder Name'],    
         view=row['View'],
-        is_flipped=True,  # Flipped data
+        is_flipped=True, 
 
         # Flipped: Left <-> Right
         left_elbow_angle_mean=row['Right_Elbow_Angle_mean'],
@@ -80,4 +72,4 @@ for _, row in df.iterrows():
         right_ankle_angle_std=row['Left_Ankle_Angle_std'],
     )
 
-print("✅ CSV data (original + flipped) imported successfully!")
+print(" CSV data (original + flipped) imported successfully!")

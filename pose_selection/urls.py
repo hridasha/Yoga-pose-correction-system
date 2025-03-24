@@ -4,7 +4,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', views.yoga_poses, name='yoga_poses'), 
+    
+    path('filter_poses/', views.filter_poses, name='filter_poses'),  
+    path('', views.home, name='home'), 
+    path('pose/', views.yoga_poses, name='yoga_poses'),
+    path('realtime/', views.realtime_pose_base, name='realtime_pose_base'),
+    path('yoga_details/<str:pose_name>/', views.yoga_details, name='yoga_details'),
     path('pose/<str:pose_name>/', views.yoga_options, name='yoga_options'), 
     # path('pose/<str:pose_name>/upload/', views.show_views, name='show_views'), 
     path('pose/<str:pose_name>/realtime/', views.realtime_pose, name='realtime_pose'),

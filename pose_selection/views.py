@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import YogaPoseIdealAngle
+from .models import YogaPoseDetails, YogaPoseIdealAngle
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.http import JsonResponse
@@ -9,6 +9,39 @@ import numpy as np
 from django.urls import reverse
 
 
+def home(request):
+    difficulty = request.GET.get('level', 'Beginner')
+
+    poses = YogaPoseDetails.objects.filter(level__iexact=difficulty).order_by('pose_name')
+    for pose in poses:
+        pose.benefits = pose.benefits.split(',')
+    context = {
+        'poses': poses,
+        'selected_level': difficulty
+    }
+
+    return render(request, 'home.html', context)
+
+
+def filter_poses(request):
+    """Handle AJAX filtering of yoga poses by level."""
+    
+    level = request.GET.get('level', '')
+    
+    if level:
+        poses = YogaPoseDetails.objects.filter(level=level)
+    else:
+        poses = YogaPoseDetails.objects.all()
+
+    pose_data = [
+        {
+            "pose_name": pose.pose_name,
+            "level": pose.level
+        }
+        for pose in poses
+    ]
+
+    return JsonResponse({"poses": pose_data})
 def calculate_angle(a, b, c):
     """Calculate the angle between three points."""
     a, b, c = np.array(a), np.array(b), np.array(c)
@@ -77,22 +110,18 @@ def calculate_error(actual, ideal):
 
 def upload_image(request, pose_name):
     """Upload image and redirect to analysis with proper parameters."""
-    
     if request.method == "POST" and request.FILES.get('image'):
         image = request.FILES['image']
 
         image_path = default_storage.save(f"uploads/{image.name}", image)
 
         return redirect(
-            reverse('analyze_pose', kwargs={
-                'pose_name': pose_name  
-            }) + f'?image_name={image.name}'
+            reverse('analyze_pose', kwargs={'pose_name': pose_name}) + f'?image_name={image.name}'
         )
 
     return render(request, 'pose_selection/upload_image.html', {
         'pose_name': pose_name
     })
-
 
 def classify_view(row):
     """
@@ -226,9 +255,8 @@ def yoga_options(request, pose_name):
 
 
 def realtime_pose(request, pose_name):
-    """
-    Placeholder for realtime pose detection.
-    """
+    
+    
     context = {
         'pose_name': pose_name
     }
@@ -424,7 +452,7 @@ def analyze_pose(request, pose_name):
                 corrections.append(correction)
 
         if not corrections:
-            corrections.append("Pose is nearly perfect! 👍")
+            corrections.append("Pose is nearly perfect! ")
 
         feedback = {
             "pose_name": pose_name,
@@ -437,155 +465,19 @@ def analyze_pose(request, pose_name):
         }
 
         print("FEEDBACK: ", feedback)
-        return render(request, 'pose_selection/analysis.html', {'feedback': feedback})
+        return render(request, 'pose_selection/analysis.html', {'feedback': feedback, 'pose_name': pose_name})
+    
+    
+    
+def realtime_pose_base(request):
+    return render(request, 'pose_selection/realtime_pose.html')
 
 
-
-
-
-
-
-
-# def analyze_pose(request, pose_name):
-#     """Analyze the uploaded pose and display image with keypoints."""
-#     import mediapipe as mp
-
-#     image_name = request.GET.get('image_name')
-#     if not image_name:
-#         return JsonResponse({"error": "No image specified."})
-
-#     image_path = default_storage.path(f"uploads/{image_name}")
-
-#     image = cv2.imread(image_path)
-#     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-#     with mp.solutions.pose.Pose(
-#         static_image_mode=True,
-#         model_complexity=1,
-#         smooth_landmarks=True,
-#         min_detection_confidence=0.6
-#     ) as pose:
-
-#         results = pose.process(image_rgb)
-
-#         if not results.pose_landmarks:
-#             return JsonResponse({"error": "No pose detected."})
-
-#         # Draw landmarks
-#         annotated_image = image.copy()
-#         mp.solutions.drawing_utils.draw_landmarks(
-#             annotated_image,
-#             results.pose_landmarks,
-#             mp.solutions.pose.POSE_CONNECTIONS
-#         )
-
-#         annotated_image_name = f"annotated_{image_name}"
-#         annotated_image_path = os.path.join(settings.MEDIA_ROOT, 'uploads', annotated_image_name)
-#         os.makedirs(os.path.dirname(annotated_image_path), exist_ok=True)
-#         cv2.imwrite(annotated_image_path, annotated_image)
-#         image_url = f"{settings.MEDIA_URL}uploads/{annotated_image_name}"
-
-#         landmarks = results.pose_landmarks.landmark
-#         actual_angles = extract_features(landmarks, mp.solutions.pose)
-
-#         row = {
-#             'Left_Shoulder_Angle': actual_angles.get('Left_Shoulder_Angle', 0),
-#             'Left_Hip_Angle': actual_angles.get('Left_Hip_Angle', 0),
-#             'Left_Knee_Angle': actual_angles.get('Left_Knee_Angle', 0),
-            
-#             'LEFT_SHOULDER_z': landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER].z,
-#             'RIGHT_SHOULDER_z': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER].z,
-            
-#             'LEFT_HIP_z': landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP].z,
-#             'RIGHT_HIP_z': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP].z,
-            
-#             'LEFT_KNEE_z': landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE].z,
-#             'RIGHT_KNEE_z': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE].z,
-            
-#             'LEFT_WRIST_z': landmarks[mp.solutions.pose.PoseLandmark.LEFT_WRIST].z,
-#             'RIGHT_WRIST_z': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_WRIST].z,
-            
-#             'LEFT_ELBOW_z': landmarks[mp.solutions.pose.PoseLandmark.LEFT_ELBOW].z,
-#             'RIGHT_ELBOW_z': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_ELBOW].z,
-
-#             'LEFT_SHOULDER_y': landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER].y,
-#             'RIGHT_SHOULDER_y': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER].y,
-            
-#             'LEFT_HIP_y': landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP].y,
-#             'RIGHT_HIP_y': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP].y,
-            
-#             'LEFT_KNEE_y': landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE].y,
-#             'RIGHT_KNEE_y': landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE].y,
-            
-#             'LEFT_SHOULDER_x': landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER].x,
-#             'LEFT_HIP_x': landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP].x,
-            
-#             'LEFT_KNEE_x': landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE].x,
-#         }
-
-#         classified_view = classify_view(row)
-
-#         ideal_angles = YogaPoseIdealAngle.objects.filter(
-#             pose_name=pose_name, view=classified_view
-#         ).first()
-
-#         if not ideal_angles:
-#             print(f"Combination not available in DB: {pose_name} - {classified_view}")
-#             return JsonResponse({
-#                 "error": f"Combination not available in DB: {pose_name} - {classified_view}"
-#             })
-
-#         original_angles = {
-#             "Left_Elbow_Angle": ideal_angles.left_elbow_angle_mean,
-#             "Right_Elbow_Angle": ideal_angles.right_elbow_angle_mean,
-#             "Left_Shoulder_Angle": ideal_angles.left_shoulder_angle_mean,
-#             "Right_Shoulder_Angle": ideal_angles.right_shoulder_angle_mean,
-#             "Left_Knee_Angle": ideal_angles.left_knee_angle_mean,
-#             "Right_Knee_Angle": ideal_angles.right_knee_angle_mean,
-#             "Left_Hip_Angle": ideal_angles.left_hip_angle_mean,
-#             "Right_Hip_Angle": ideal_angles.right_hip_angle_mean,
-#             "Left_Ankle_Angle": ideal_angles.left_ankle_angle_mean,
-#             "Right_Ankle_Angle": ideal_angles.right_ankle_angle_mean
-#         }
-
-#         flipped_angles = {
-#             "Left_Elbow_Angle": ideal_angles.right_elbow_angle_mean,
-#             "Right_Elbow_Angle": ideal_angles.left_elbow_angle_mean,
-#             "Left_Shoulder_Angle": ideal_angles.right_shoulder_angle_mean,
-#             "Right_Shoulder_Angle": ideal_angles.left_shoulder_angle_mean,
-#             "Left_Knee_Angle": ideal_angles.right_knee_angle_mean,
-#             "Right_Knee_Angle": ideal_angles.left_knee_angle_mean,
-#             "Left_Hip_Angle": ideal_angles.right_hip_angle_mean,
-#             "Right_Hip_Angle": ideal_angles.left_hip_angle_mean,
-#             "Left_Ankle_Angle": ideal_angles.right_ankle_angle_mean,
-#             "Right_Ankle_Angle": ideal_angles.left_ankle_angle_mean
-#         }
-
-#         original_errors = calculate_error(actual_angles, original_angles)
-#         flipped_errors = calculate_error(actual_angles, flipped_angles)
-
-#         avg_error_original = np.mean([e['error'] for e in original_errors.values()])
-#         avg_error_flipped = np.mean([e['error'] for e in flipped_errors.values()])
-
-#         best_match = "Flipped Pose" if avg_error_flipped < avg_error_original else "Original Pose"
-#         best_errors = flipped_errors if avg_error_flipped < avg_error_original else original_errors
-
-#         feedback = {
-#             "pose_name": pose_name,
-#             "classified_view": classified_view,
-#             "best_match": best_match,
-#             "errors": best_errors,
-#             # "avg_error": round(best_avg_error, 2),
-#             "image_url": image_url
-#         }
-#         print("FEEDBACK: ", feedback)
-
-#         return render(request, 'pose_selection/analysis.html', {'feedback': feedback})
-
-
-
-
-
-
-
-
+def yoga_details(request, pose_name):
+    pose = YogaPoseDetails.objects.get(pose_name=pose_name)
+    pose.benefits = pose.benefits.split(',')
+    context ={
+        'pose': pose,
+        
+    }
+    return render(request, 'pose_selection/yoga_details.html', context)

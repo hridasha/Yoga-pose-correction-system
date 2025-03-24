@@ -1,31 +1,218 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container">
-    <h1 class="text-center mt-5">Yoga Pose Correction System</h1>
 
-    <div class="row mt-5">
-        <div class="col-md-6">
-            <div class="card">
-                <img src="/static/images/realtime.jpg" class="card-img-top" alt="Real-Time Yoga">
+<!-- ✅ Hero Section with Full-Screen Height and Background Image -->
+<div class="hero-section" style="min-height: 100vh; background: url('{% static 'images/istockphoto-1459538299-612x612.webp' %}') no-repeat center center/cover; display: flex; align-items: center; justify-content: center; position: relative;">
+
+    <!-- Blue Overlay -->
+    <div class="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 50, 65, 0.85); z-index: 1;">
+    </div>
+
+    <!-- Content -->
+    <div class="container text-center" style="position: relative; z-index: 2; color: white;">
+        <h1 class="display-4">Perfect Your Yoga Practice</h1>
+        <p class="lead">Experience real-time AI-powered pose correction and personalized feedback to enhance your yoga
+            journey.</p>
+
+        <div class="mt-4 d-flex justify-content-center">
+            <a href="{% url 'realtime_pose_base' %}" class="btn btn-realtime mx-2">
+                <i class="fas fa-camera mr-2"></i> Start Real-Time Correction
+            </a>
+            <a href="{% url 'yoga_poses' %}" class="btn btn-upload mx-2">
+                <i class="fas fa-upload mr-2"></i> Upload a Photo
+            </a>
+        </div>
+    </div>
+    <div class="scroll-down" style="position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 2;">
+        <a href="#explore-section" class="text-white" style="font-size: 1.5rem;"><i class="fas fa-arrow-down"></i>
+            Scroll Down</a>
+    </div>
+</div>
+
+
+
+
+<!-- Yoga Pose Section -->
+<div class="container my-5" id="explore-section">
+    <h2 class="section-title text-center">Explore Yoga Poses</h2>
+
+    <div class="d-flex justify-content-center mb-4">
+        <a href="?level=Beginner"
+            class="btn btn-neutral {% if selected_level == 'Beginner' %}active{% endif %}">Beginner</a>
+        <a href="?level=Intermediate"
+            class="btn btn-neutral {% if selected_level == 'Intermediate' %}active{% endif %}">Intermediate</a>
+        <a href="?level=Advanced"
+            class="btn btn-neutral {% if selected_level == 'Advanced' %}active{% endif %}">Advanced</a>
+    </div>
+
+
+    <!-- Carousel Wrapper -->
+    <div id="pose-container" class="container">
+        <div id="poseCarousel" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner">
+                {% for pose in poses %}
+                {% if forloop.first %}
+                <div class="carousel-item active">
+                    <div class="row">
+                        {% elif forloop.counter0|divisibleby:3 %}
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="row">
+                        {% endif %}
+
+                        <!-- Pose Card -->
+                        <div class="col-md-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="position-relative">
+                                    <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}"
+                                        class="card-img-top" alt="Yoga Pose">
+                                    <span class="badge position-absolute" style="top: 10px; left: 10px; padding: 8px 12px; font-size: 14px; 
+                                        {% if pose.level == 'Beginner' %} background-color: #8B694D; color: white; 
+                                        {% elif pose.level == 'Intermediate' %} background-color: #2B3241; color: white; 
+                                        {% elif pose.level == 'Advanced' %} background-color: #9EA2AD; color: #2B3241; 
+                                        {% else %} background-color: #E8E2D0; color: #2B3241; {% endif %}">
+                                        {{ pose.level }}
+                                    </span>
+
+
+                                </div>
+
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ pose.pose_name }}</h5>
+                                    <h6 class="text-muted">{{ pose.english_name }}</h6>
+
+                                    <ul class="list-unstyled">
+                                        {% for benefit in pose.benefits %}
+                                        <li>{{ benefit }}</li>
+                                        {% endfor %}
+                                    </ul>
+
+                                    <a href="{% url 'yoga_details' pose_name=pose.pose_name %}"
+                                        class="btn btn-dark-gray">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if forloop.last %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Carousel Controls -->
+            <a class="carousel-control-prev" href="#poseCarousel" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Previous</span>
+            </a>
+            <a class="carousel-control-next" href="#poseCarousel" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Next</span>
+            </a>
+        </div>
+    </div>
+</div>
+<!-- Recent Activity Section -->
+<div class="container my-5">
+    <div class="text-center">
+        <h2 class="section-title">Recent Activity</h2>
+        <p>Track your recent yoga sessions and see how you’re improving.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card activity-card h-100">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Real-Time Yoga</h5>
-                    <p>Perform yoga live, get pose detection, and correction guidance.</p>
-                    <a href="{% url 'realtime' %}" class="btn btn-primary">Start Real-Time</a>
+                    <h5 class="card-title">Mountain Pose</h5>
+                    <p class="card-text">Completed 2 hours ago</p>
+                    <span class="badge badge-neutral">Accuracy: 92%</span>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card">
-                <img src="/static/images/cards.jpg" class="card-img-top" alt="Pose Selection">
+        <div class="col-md-4 mb-4">
+            <div class="card activity-card h-100">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Pose Selection</h5>
-                    <p>Choose a yoga pose and view to get ideal angles and guidance.</p>
-                    <a href="{% url 'pose-selection' %}" class="btn btn-primary">Select Pose</a>
+                    <h5 class="card-title">Warrior II</h5>
+                    <p class="card-text">Completed yesterday</p>
+                    <span class="badge badge-neutral">Accuracy: 88%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card activity-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Tree Pose</h5>
+                    <p class="card-text">Completed 2 days ago</p>
+                    <span class="badge badge-neutral">Accuracy: 95%</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Yoga Tips Section -->
+<div class="container my-5">
+    <div class="text-center">
+        <h2 class="section-title">Yoga Tips</h2>
+    </div>
+
+    <div class="card tip-card mx-auto shadow-sm" style="max-width: 600px;">
+        <div class="card-body text-center">
+            <p id="yoga-tip" class="font-italic">"Focus on your breath and alignment for a deeper yoga experience."</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- AJAX Script -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const tips = [
+        'Focus on your breath and alignment for a deeper yoga experience.',
+        'Maintain proper form to prevent injuries.',
+        'Practice regularly to build strength and flexibility.',
+        'Listen to your body and modify poses as needed.',
+        'Combine different poses to create a balanced practice.',
+        'Incorporate meditation and breathing exercises for relaxation.',
+        'Consult with a certified yoga instructor for personalized guidance.',
+        'Gradually increase the difficulty of poses to challenge your body.',
+        'Practice in a comfortable, quiet environment.',
+        'Stay consistent to see long-term benefits.'
+    ]
+    let currentIndex = 0;
+
+    function changeTip() {
+        currentIndex = (currentIndex + 1) % tips.length;
+        document.getElementById('yoga-tip').textContent = tips[currentIndex];
+    }
+
+    setInterval(changeTip, 2000);
+
+
+
+
+    $(document).ready(function () {
+        $(".filter-btn").click(function () {
+            const level = $(this).data("level");
+
+            $.ajax({
+                url: "{% url 'filter_poses' %}",
+                data: { 'level': level },
+                method: "GET",
+                success: function (data) {
+                    $("#pose-container").html(data);
+                },
+                error: function () {
+                    alert("Failed to load poses!");
+                }
+            });
+        });
+    });
+</script>
+
 {% endblock %}

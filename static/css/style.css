@@ -1,0 +1,308 @@
+/* ✅ General Styling */
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #E8E2D0;  /* Soft Beige */
+    color: #2B3241;       /* Deep Navy Gray */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* ✅ Navbar Styling */
+.navbar {
+    background: #2B3241;  /* Deep Navy Gray */
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 15px 0;
+    transition: all 0.3s ease;
+}
+
+.navbar a {
+    color: #E8E2D0 !important;  /* Soft Beige */
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.navbar a:hover {
+    color: #8B694D !important;  /* Warm Brown */
+}
+
+/* ✅ Logo and Navbar Alignment */
+.navbar-brand img {
+    height: 40px;
+    margin-right: 10px;
+}
+
+.navbar-nav .nav-link {
+    padding: 10px 15px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.navbar-toggler {
+    border: none;
+    outline: none;
+}
+
+.navbar-toggler:focus {
+    box-shadow: none;
+}
+
+/* ✅ Custom Container for Sections */
+.custom-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ✅ Footer Styling */
+.footer {
+    background-color: #2B3241;  /* Deep Navy Gray */
+    color: #E8E2D0;             /* Soft Beige */
+    padding: 40px 20px;
+    text-align: center;
+    position: relative;         
+    bottom: 0;                  
+    width: 100%;                
+}
+
+/* Footer Links */
+.footer a {
+    color: #9EA2AD;             /* Muted Blue-Gray */
+    text-decoration: none;
+    font-weight: bold;
+    margin: 0 15px;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: #8B694D;             /* Warm Brown */
+    text-decoration: underline;
+}
+
+.footer i {
+    font-size: 1.5rem;
+    margin: 0 15px;
+    color: #9EA2AD;             /* Muted Blue-Gray */
+    transition: color 0.3s ease;
+}
+
+.footer i:hover {
+    color: #8B694D;             /* Warm Brown */
+}
+
+/* ✅ Buttons */
+.btn {
+    font-weight: bold;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+}
+
+/* Primary Buttons */
+.btn-realtime {
+    background: #8B694D;      /* Warm Brown */
+    color: #E8E2D0;           /* Soft Beige */
+}
+
+.btn-realtime:hover {
+    background: #B0A18B;      /* Taupe */
+    color: white;
+}
+
+/* Secondary Buttons */
+.btn-upload {
+    background: #9EA2AD;      /* Muted Blue-Gray */
+    color: #2B3241;           /* Deep Navy Gray */
+    border: 2px solid #2B3241;
+}
+
+.btn-upload:hover {
+    background: #8B694D;      /* Warm Brown */
+    color: white;
+}
+
+/* ✅ Hero Section */
+.hero-section {
+    position: relative;
+    background: linear-gradient(to bottom, #2B3241, #183B4E);  /* Deep Navy Gray to Dark Blue */
+    color: white;
+    text-align: center;
+    padding: 100px 20px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1.5s ease-in;
+}
+
+.hero-section h1 {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #E8E2D0;  /* Soft Beige */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.hero-section p {
+    font-size: 1.5rem;
+    color: #9EA2AD;  /* Muted Blue-Gray */
+    margin-bottom: 40px;
+}
+
+/* ✅ Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #F5F5F5;  /* Light Beige */
+    color: #2B3241;       /* Deep Navy Gray */
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+    color: #8B694D;       /* Warm Brown */
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+
+.card-text {
+    color: #9EA2AD;       /* Muted Blue-Gray */
+}
+
+/* ✅ Table Styling */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table th {
+    background: #2B3241;     /* Deep Navy Gray */
+    color: white;
+    font-weight: bold;
+    padding: 12px;
+}
+
+.table td {
+    padding: 12px;
+    color: #2B3241;          /* Deep Navy Gray */
+}
+
+.table tbody tr:hover {
+    background: #B0A18B;      /* Taupe */
+    color: white;
+    transition: 0.3s;
+}
+
+/* ✅ Alerts */
+.alert {
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 16px;
+}
+
+/* ✅ Corrections List */
+.list-unstyled {
+    padding-left: 0;
+}
+
+.list-unstyled li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.list-unstyled i {
+    font-size: 20px;
+    color: #8B694D;  /* Warm Brown */
+}
+
+/* ✅ Yoga Pose Image */
+.pose-image {
+    border: 8px solid #B0A18B; /* Taupe */
+    padding: 10px;
+    max-width: 600px;
+    transition: transform 0.3s ease;
+}
+
+.pose-image:hover {
+    transform: scale(1.05);
+}
+
+/* ✅ Animations */
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+/* ✅ Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+
+    .pose-image {
+        max-width: 100%;
+    }
+}
+
+/* ✅ Upload Form */
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #9EA2AD; /* Muted Blue-Gray */
+}
+
+.form-control:focus {
+    border-color: #2B3241; /* Deep Navy Gray */
+    box-shadow: 0 0 0 0.25rem rgba(43, 50, 65, 0.25);
+}
+
+
+/* Override Bootstrap container width on large screens */
+@media (min-width: 1200px) {
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1400px; /* Set to a fixed width */
+        margin: 0 auto;     /* Center the container */
+    }
+}
+/*  Override all Bootstrap media queries */
+
+@media (min-width: 576px) {
+    .container, .container-sm { max-width: 1000px !important; }
+}
+
+@media (min-width: 768px) {
+    .container, .container-md { max-width: 1100px !important; }
+}
+
+@media (min-width: 992px) {
+    .container, .container-lg { max-width: 1200px !important; }
+}
+
+@media (min-width: 1200px) {
+    .container, .container-xl { max-width: 1400px !important; }
+}
+
+@media (min-width: 1400px) {
+    .container, .container-xxl { max-width: 1600px !important; }
+}

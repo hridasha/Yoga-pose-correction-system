@@ -1,27 +1,66 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload Image</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
 
-<div class="container mt-5">
-    <h2>Upload an Image for {{ pose_name }} - {{ view }}</h2>
+{% block content %}
 
-    <form method="POST" enctype="multipart/form-data" class="mt-4">
+<!-- Upload Image Section -->
+<div class="container my-5">
+    <h2 class="mb-4">Upload an Image for {{ pose_name }}</h2>
+
+    <!-- Instructions for accepted image types -->
+    <div class="alert alert-info">
+        <strong>Accepted Image Formats:</strong> JPEG, PNG, GIF (Max size: 5MB)
+    </div>
+
+    <!-- ✅ Form with Proper Spacing -->
+    <form method="POST" action="{% url 'upload_image' pose_name=pose_name %}" enctype="multipart/form-data" class="mt-4" id="uploadForm">
         {% csrf_token %}
-        <div class="mb-3">
-            <label for="image" class="form-label">Select Image:</label>
-            <input type="file" name="image" id="image" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Upload & Analyze</button>
-    </form>
 
-    <a href="{% url 'yoga_views' pose_name=pose_name %}" class="btn btn-secondary mt-3">Back to Views</a>
+        <!-- Image Upload Field -->
+        <div class="mb-4">
+            <label for="image" class="form-label">Select Image:</label>
+            <input type="file" name="image" id="image" class="form-control" required onchange="previewImage(event)">
+        </div>
+
+        <!-- Image Preview -->
+        <div id="imagePreview" class="mb-4" style="display: none;">
+            <h5>Preview:</h5>
+            <img id="previewImg" src="" alt="Image Preview" class="img-fluid rounded shadow-sm" style="max-width: 100%; height: auto;">
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress mb-4" style="height: 20px; display: none;" id="progressBarContainer">
+            <div id="progressBar" class="progress-bar progress-bar-striped" role="progressbar" 
+                 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            </div>
+        </div>
+
+        <!-- ✅ Buttons with Proper Spacing -->
+        <div class="mb-5 d-flex align-items-center">
+            <button type="submit" class="btn btn-primary mt-3">Upload & Analyze</button>
+            <a href="{% url 'yoga_details' pose_name=pose_name %}" class="btn btn-secondary mt-3 ms-4">Back to Views</a>
+        </div>
+    </form>
 </div>
 
-</body>
-</html>
+<!-- JavaScript for Preview -->
+<script>
+    function previewImage(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function () {
+            const previewContainer = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+
+            previewImg.src = reader.result;
+            previewContainer.style.display = 'block';
+        };
+
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
+
+{% endblock %}

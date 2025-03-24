@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Yoga Pose Details Section -->
+<div class="container my-5">
+    <div class="row align-items-center">
+
+        <!-- Left Side: Larger Image -->
+        <div class="col-md-5">
+            <div class="card shadow-sm" style="min-height: 100%; border: none;">
+                <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
+                     class="card-img-top" 
+                     alt="{{ pose.pose_name }}"
+                     style="height: 100%; object-fit: cover; border-radius: 8px;">
+            </div>
+        </div>
+
+        <!-- Right Side: Pose Details -->
+        <div class="col-md-7">
+            <h2 class="mb-3">{{ pose.pose_name }}</h2>
+            <h4 class="text-muted">{{ pose.english_name }}</h4>
+
+            <!-- Pose Level with Colors -->
+            <div class="my-3">
+                <span style="
+                    font-weight: bold;
+                    font-size: 20px;  
+                    {% if pose.level == 'Beginner' %} color: #4CAF50;  
+                    {% elif pose.level == 'Intermediate' %} color: #FF9800;  
+                    {% elif pose.level == 'Advanced' %} color: #F44336;  
+                    {% else %} color: #607D8B;  
+                    {% endif %}"
+                    >
+                    {{ pose.level }}
+                </span>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-4">
+                <h5>Benefits:</h5>
+                <ul>
+                    {% for benefit in pose.benefits %}
+                    <li>{{ benefit }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Hold Range -->
+            <div class="mb-4">
+                <h5>Hold Range:</h5>
+                <p>{{ pose.hold_duration }} seconds</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex">
+                <a href="{% url 'realtime_pose' pose_name=pose.pose_name %}" class="btn btn-realtime mr-3">
+                    <i class="fas fa-camera"></i> Real-Time Correction
+                </a>
+
+                <a href="{% url 'upload_image' pose_name=pose.pose_name %}" class="btn btn-upload">
+                    <i class="fas fa-upload"></i> Upload an Image
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

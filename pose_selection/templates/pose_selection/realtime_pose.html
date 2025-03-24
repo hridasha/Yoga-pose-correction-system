@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="container mt-5 text-center">
-    <h2>📹 Realtime Yoga Detection</h2>
+    <h2>Realtime Yoga Detection</h2>
     <p>Perform yoga poses in front of the camera.</p>
-
+    <h1>{{pose_name}}</h1>
     <!-- Placeholder for webcam -->
     <div class="alert alert-info">
-        <p>📌 Webcam feed will appear here...</p>
+        <p>Webcam feed will appear here...</p>
     </div>
 
     <a href="{% url 'yoga_poses' %}" class="btn btn-secondary">Back to Poses</a>
