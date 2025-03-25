@@ -1,0 +1,36 @@
+<div id="poseCarousel" class="carousel slide" data-ride="carousel">
+    <div class="carousel-inner">
+        {% for pose in poses %}
+            {% if forloop.first %}
+                <div class="carousel-item active">
+                    <div class="row">
+            {% elif forloop.counter0|divisibleby:3 %}
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="row">
+            {% endif %}
+
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="position-relative">
+                        <img src="{{ pose.image.url }}" class="card-img-top" alt="{{ pose.pose_name }}">
+                        <span class="badge position-absolute" style="top: 10px; left: 10px;">
+                            {{ pose.level }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pose.pose_name }}</h5>
+                        <h6 class="text-muted">{{ pose.english_name }}</h6>
+                        <a href="{% url 'yoga_details' pose_name=pose.pose_name %}" class="btn btn-dark-gray">View Details</a>
+                    </div>
+                </div>
+            </div>
+
+            {% if forloop.last %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

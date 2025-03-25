@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('pose_selection.urls')),
     # path('pose-selection', include('pose_selection.urls')),
     path('realtime', include('realtime.urls')),
+    
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

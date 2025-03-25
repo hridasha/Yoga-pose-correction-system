@@ -3,7 +3,6 @@
 
 {% block content %}
 
-<!-- ✅ Hero Section with Full-Screen Height and Background Image -->
 <div class="hero-section" style="min-height: 100vh; background: url('{% static 'images/istockphoto-1459538299-612x612.webp' %}') no-repeat center center/cover; display: flex; align-items: center; justify-content: center; position: relative;">
 
     <!-- Blue Overlay -->
@@ -161,7 +160,7 @@
         <h2 class="section-title">Yoga Tips</h2>
     </div>
 
-    <div class="card tip-card mx-auto shadow-sm" style="max-width: 600px;">
+    <div class="card tip-card mx-auto shadow-sm" style="max-width: 800px; font-size: 1.8rem;">
         <div class="card-body text-center">
             <p id="yoga-tip" class="font-italic">"Focus on your breath and alignment for a deeper yoga experience."</p>
         </div>
@@ -191,7 +190,7 @@
         document.getElementById('yoga-tip').textContent = tips[currentIndex];
     }
 
-    setInterval(changeTip, 2000);
+    setInterval(changeTip, 5000);
 
 
 

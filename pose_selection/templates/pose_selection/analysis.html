@@ -15,13 +15,13 @@
 
 <div class="container py-5">
 
-    <!-- ✅ Title Section -->
+    <!--  Title Section -->
     <div class="text-center mb-5">
         <h1 class="display-4 text-dark" style="color: #2B3241;">Yoga Pose Analysis</h1>
         <hr class="my-4" style="border: 1px solid #9EA2AD;">
     </div>
 
-    <!-- ✅ Pose Image with Keypoints -->
+    <!--  Pose Image with Keypoints -->
     <div class="text-center mb-5">
         <h5 class="fw-bold" style="color: #8B694D;">Detected Pose with Keypoints</h5>
         <img src="{{ feedback.image_url }}" 
@@ -30,7 +30,7 @@
              style="max-width: 600px; border: 8px solid #B0A18B; padding: 10px;">
     </div>
 
-    <!-- ✅ Pose Details Section -->
+    <!--  Pose Details Section -->
     <div class="row mb-5">
 
         <!-- Pose Info Card -->
@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <!-- ✅ Angle Error Table -->
+    <!--  Angle Error Table -->
     <div class="card shadow-sm border-0 mb-5" style="background-color: #F5F5F5;">
         <div class="card-header" style="background-color: #2B3241; color: white;">
             <h5>Angle Error Details</h5>
@@ -107,7 +107,7 @@
         </div>
     </div>
 
-    <!-- ✅ Back Button -->
+    <!--  Back Button -->
     <div class="text-center">
         <a href="{% url 'yoga_details' pose_name=feedback.pose_name %}" 
            class="btn btn-dark-gray" 

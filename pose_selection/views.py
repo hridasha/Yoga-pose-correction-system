@@ -264,10 +264,11 @@ def realtime_pose(request, pose_name):
 
 def yoga_poses(request):
     """Display unique yoga poses."""
-    poses = YogaPoseIdealAngle.objects.filter(is_flipped=False).values('pose_name').distinct()
-    
+    poses = YogaPoseDetails.objects.all()
+    for pose in poses:
+        pose.benefits = pose.benefits.split(',')
     context = {
-        'poses': poses
+        'poses': poses,
     }
     return render(request, 'pose_selection/yoga_poses.html', context)
 
@@ -292,15 +293,6 @@ def yoga_views(request, pose_name):
         'view_links': view_links  # Send view links to the template
     }
     return render(request, 'pose_selection/yoga_views.html', context)
-
-def yoga_poses(request):
-    poses = YogaPoseIdealAngle.objects.filter(is_flipped=False).values('pose_name').distinct()
-    
-    context = {
-        'poses': poses
-    }
-    return render(request, 'pose_selection/yoga_poses.html', context)
-
 
 
 
@@ -481,3 +473,7 @@ def yoga_details(request, pose_name):
         
     }
     return render(request, 'pose_selection/yoga_details.html', context)
+
+
+def live_stream(request):
+    return render(request, 'pose_selection/live_stream.html')

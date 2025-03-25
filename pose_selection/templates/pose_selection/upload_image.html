@@ -12,7 +12,6 @@
         <strong>Accepted Image Formats:</strong> JPEG, PNG, GIF (Max size: 5MB)
     </div>
 
-    <!-- ✅ Form with Proper Spacing -->
     <form method="POST" action="{% url 'upload_image' pose_name=pose_name %}" enctype="multipart/form-data" class="mt-4" id="uploadForm">
         {% csrf_token %}
 
@@ -35,7 +34,7 @@
             </div>
         </div>
 
-        <!-- ✅ Buttons with Proper Spacing -->
+        <!--  Buttons with Proper Spacing -->
         <div class="mb-5 d-flex align-items-center">
             <button type="submit" class="btn btn-primary mt-3">Upload & Analyze</button>
             <a href="{% url 'yoga_details' pose_name=pose_name %}" class="btn btn-secondary mt-3 ms-4">Back to Views</a>

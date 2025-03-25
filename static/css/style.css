@@ -1,4 +1,4 @@
-/* ✅ General Styling */
+/*  General Styling */
 body {
     font-family: 'Roboto', sans-serif;
     background: #E8E2D0;  /* Soft Beige */
@@ -8,7 +8,7 @@ body {
     line-height: 1.6;
 }
 
-/* ✅ Navbar Styling */
+/*  Navbar Styling */
 .navbar {
     background: #2B3241;  /* Deep Navy Gray */
     color: white;
@@ -27,7 +27,7 @@ body {
     color: #8B694D !important;  /* Warm Brown */
 }
 
-/* ✅ Logo and Navbar Alignment */
+/*  Logo and Navbar Alignment */
 .navbar-brand img {
     height: 40px;
     margin-right: 10px;
@@ -48,14 +48,14 @@ body {
     box-shadow: none;
 }
 
-/* ✅ Custom Container for Sections */
+/*  Custom Container for Sections */
 .custom-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
-/* ✅ Footer Styling */
+/*  Footer Styling */
 .footer {
     background-color: #2B3241;  /* Deep Navy Gray */
     color: #E8E2D0;             /* Soft Beige */
@@ -91,7 +91,7 @@ body {
     color: #8B694D;             /* Warm Brown */
 }
 
-/* ✅ Buttons */
+/*  Buttons */
 .btn {
     font-weight: bold;
     padding: 12px 30px;
@@ -130,7 +130,7 @@ body {
     color: white;
 }
 
-/* ✅ Hero Section */
+/*  Hero Section */
 .hero-section {
     position: relative;
     background: linear-gradient(to bottom, #2B3241, #183B4E);  /* Deep Navy Gray to Dark Blue */
@@ -154,7 +154,7 @@ body {
     margin-bottom: 40px;
 }
 
-/* ✅ Cards */
+/*  Cards */
 .card {
     border: none;
     border-radius: 12px;
@@ -179,7 +179,7 @@ body {
     color: #9EA2AD;       /* Muted Blue-Gray */
 }
 
-/* ✅ Table Styling */
+/*  Table Styling */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -205,14 +205,14 @@ body {
     transition: 0.3s;
 }
 
-/* ✅ Alerts */
+/*  Alerts */
 .alert {
     border-radius: 8px;
     padding: 15px;
     font-size: 16px;
 }
 
-/* ✅ Corrections List */
+/*  Corrections List */
 .list-unstyled {
     padding-left: 0;
 }
@@ -228,7 +228,7 @@ body {
     color: #8B694D;  /* Warm Brown */
 }
 
-/* ✅ Yoga Pose Image */
+/*  Yoga Pose Image */
 .pose-image {
     border: 8px solid #B0A18B; /* Taupe */
     padding: 10px;
@@ -240,7 +240,7 @@ body {
     transform: scale(1.05);
 }
 
-/* ✅ Animations */
+/*  Animations */
 @keyframes fadeIn {
     0% { opacity: 0; }
     100% { opacity: 1; }
@@ -250,7 +250,7 @@ body {
     animation: fadeIn 1.5s ease-in-out;
 }
 
-/* ✅ Responsive Design */
+/*  Responsive Design */
 @media (max-width: 768px) {
     .container {
         padding: 20px;
@@ -266,7 +266,7 @@ body {
     }
 }
 
-/* ✅ Upload Form */
+/*  Upload Form */
 .form-control {
     border-radius: 10px;
     border: 1px solid #9EA2AD; /* Muted Blue-Gray */

@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     
-    path('filter_poses/', views.filter_poses, name='filter_poses'),  
+    # path('filter_poses/', views.filter_poses, name='filter_poses'),  
     path('', views.home, name='home'), 
     path('pose/', views.yoga_poses, name='yoga_poses'),
     path('realtime/', views.realtime_pose_base, name='realtime_pose_base'),
@@ -16,6 +16,7 @@ urlpatterns = [
     path('pose/<str:pose_name>/yoga_views/', views.yoga_views, name='yoga_views'),  
     path('pose/<str:pose_name>/upload/', views.upload_image, name='upload_image'),  
     path('pose/<str:pose_name>/analyze/', views.analyze_pose, name='analyze_pose'),  
+    path('live/', views.live_stream, name='live_stream'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
