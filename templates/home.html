@@ -5,11 +5,9 @@
 
 <div class="hero-section" style="min-height: 100vh; background: url('{% static 'images/istockphoto-1459538299-612x612.webp' %}') no-repeat center center/cover; display: flex; align-items: center; justify-content: center; position: relative;">
 
-    <!-- Blue Overlay -->
     <div class="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 50, 65, 0.85); z-index: 1;">
     </div>
 
-    <!-- Content -->
     <div class="container text-center" style="position: relative; z-index: 2; color: white;">
         <h1 class="display-4">Perfect Your Yoga Practice</h1>
         <p class="lead">Experience real-time AI-powered pose correction and personalized feedback to enhance your yoga
@@ -160,7 +158,7 @@
         <h2 class="section-title">Yoga Tips</h2>
     </div>
 
-    <div class="card tip-card mx-auto shadow-sm" style="max-width: 800px; font-size: 1.8rem;">
+    <div class="card tip-card mx-auto shadow-sm" style="max-width: 800px; font-size: 2.rem;">
         <div class="card-body text-center">
             <p id="yoga-tip" class="font-italic">"Focus on your breath and alignment for a deeper yoga experience."</p>
         </div>
@@ -168,7 +166,6 @@
 </div>
 
 
-<!-- AJAX Script -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     const tips = [
@@ -190,28 +187,9 @@
         document.getElementById('yoga-tip').textContent = tips[currentIndex];
     }
 
-    setInterval(changeTip, 5000);
+    setInterval(changeTip, 2000);
 
 
-
-
-    $(document).ready(function () {
-        $(".filter-btn").click(function () {
-            const level = $(this).data("level");
-
-            $.ajax({
-                url: "{% url 'filter_poses' %}",
-                data: { 'level': level },
-                method: "GET",
-                success: function (data) {
-                    $("#pose-container").html(data);
-                },
-                error: function () {
-                    alert("Failed to load poses!");
-                }
-            });
-        });
-    });
 </script>
 
 {% endblock %}

@@ -17,6 +17,8 @@ urlpatterns = [
     path('pose/<str:pose_name>/upload/', views.upload_image, name='upload_image'),  
     path('pose/<str:pose_name>/analyze/', views.analyze_pose, name='analyze_pose'),  
     path('live/', views.live_stream, name='live_stream'),
+    path('stop_stream/', views.stop_stream, name='stop_stream'),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

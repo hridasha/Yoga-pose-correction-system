@@ -7,7 +7,29 @@ import cv2
 import os
 import numpy as np
 from django.urls import reverse
+import subprocess
+import requests
+import signal
+import time
+from .fastapi_manager import start_fastapi_server, stop_fastapi_server
 
+def live_stream(request):
+    """ Django view to render live stream """
+
+    try:
+        # Check FastAPI server status
+        response = requests.get("http://127.0.0.1:8001/status")
+        fastapi_status = "Running" if response.status_code == 200 else "Not Running"
+    except requests.ConnectionError:
+        fastapi_status = "Not Running"
+
+    return render(request, "pose_selection/live_stream.html", {"fastapi_status": fastapi_status})
+def stop_stream(request):
+    """ AJAX call to stop the FastAPI server """
+    
+    stop_fastapi_server()
+    
+    return JsonResponse({"status": "stopped"})
 
 def home(request):
     difficulty = request.GET.get('level', 'Beginner')
@@ -473,7 +495,3 @@ def yoga_details(request, pose_name):
         
     }
     return render(request, 'pose_selection/yoga_details.html', context)
-
-
-def live_stream(request):
-    return render(request, 'pose_selection/live_stream.html')
