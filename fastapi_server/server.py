@@ -5,6 +5,8 @@ import asyncio
 import logging
 import numpy as np
 import io
+from typing import List, Dict, Tuple
+from pose_utils import PoseDetector
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +26,15 @@ app.add_middleware(
 # Store active WebSocket connections
 active_connections = set()
 
+# Initialize pose detector only when needed
+pose_detector = None
+
+def get_pose_detector():
+    global pose_detector
+    if pose_detector is None:
+        pose_detector = PoseDetector()
+    return pose_detector
+
 async def process_frame(websocket):
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -40,6 +51,14 @@ async def process_frame(websocket):
 
         # Resize frame to reduce bandwidth
         frame = cv2.resize(frame, (640, 480))
+        
+        # Process frame with pose detection
+        detector = get_pose_detector()
+        landmarks = detector.process_frame(frame)
+        
+        if landmarks:
+            # Draw the pose landmarks on the frame
+            frame = detector.draw_pose_landmarks(frame, landmarks)
         
         # Encode frame with optimized quality settings
         _, buffer = cv2.imencode(
