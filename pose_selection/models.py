@@ -35,9 +35,8 @@ class YogaPoseIdealAngle(models.Model):
     right_ankle_angle_std = models.FloatField()
 
     # Timestamp fields
-    created_at = models.DateTimeField(auto_now_add=True)  # Automatically set on creation
-    updated_at = models.DateTimeField(auto_now=True)      # Automatically updated on save
-
+    created_at = models.DateTimeField(auto_now_add=True) 
+    updated_at = models.DateTimeField(auto_now=True)     
     def __str__(self):
         """
         String representation for easy debugging.

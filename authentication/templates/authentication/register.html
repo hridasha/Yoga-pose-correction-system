@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YogaAlign - Register</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #E8E2D0;
+            color: #2B3241;
+        }
+
+        .bg-cover {
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.8s ease-in-out;
+        }
+
+        .btn-primary {
+            background: #8B694D;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #6A5038;
+        }
+
+        .input-group-text {
+            background: #2B3241 !important;
+            color: #E8E2D0;
+            border: none;
+        }
+
+        .form-label {
+            color: #2B3241;
+            font-weight: bold;
+        }
+
+        .slideshow {
+            background-size: cover;
+            background-position: center;
+            transition: background 1s ease-in-out;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .overlay-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #fff;
+            z-index: 10;
+        }
+
+        .overlay-content h1 {
+            font-size: 4rem;
+            font-weight: bold;
+        }
+
+        .overlay-content p {
+            font-size: 1.2rem;
+        }
+
+        .feature-list {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            color: #fff;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Error box styling */
+        .error-box {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<div class="d-flex min-vh-100">
+
+    <!-- Slideshow Section -->
+    <div class="col-6 slideshow" id="slideshow">
+        <div class="overlay-content">
+            <h1>Yoga<span class="text-primary">Align</span></h1>
+            <p>Perfect your practice with AI-powered pose correction and guidance</p>
+        </div>
+        <div class="feature-list">
+            <div>
+                <i class="fas fa-check-circle text-primary"></i>
+                <span>Real-time pose analysis</span>
+            </div>
+            <div>
+                <i class="fas fa-heart text-primary"></i>
+                <span>Personalized adjustments</span>
+            </div>
+            <div>
+                <i class="fas fa-comments text-primary"></i>
+                <span>Instant feedback</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Form Section -->
+    <div class="col-6 d-flex align-items-center justify-content-center">
+        <div class="bg-white p-5 rounded-3 shadow-lg w-75">
+
+            <!-- Error Box -->
+            {% if messages %}
+            <div class="error-box">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="text-center mb-4">
+                <i class="fas fa-user-plus text-primary display-4"></i>
+            </div>
+            <h2 class="text-center fw-bold mb-4">Join YogaAlign</h2>
+            <p class="text-center text-muted mb-4">Start your transformation today</p>
+
+            <form method="POST" action="{% url 'register' %}">
+                {% csrf_token %}
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-control" placeholder="John" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-control" placeholder="Doe" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Age</label>
+                    <input type="number" name="age" class="form-control" placeholder="Your age" min="18">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password1" class="form-control" placeholder="******" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" name="password2" class="form-control" placeholder="******" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Create Account</button>
+            </form>
+
+            <p class="text-center text-muted mt-4">
+                Already have an account?
+                <a href="{% url 'login' %}" class="link-primary">Sign in</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const yogaImages = [
+        "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&h=600",
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&h=600",
+        "https://images.unsplash.com/photo-1510894347713-fc3ed6fdf539?auto=format&fit=crop&w=800&h=600"
+    ];
+
+    let currentIndex = 0;
+
+    function changeImage() {
+        const slideshow = document.getElementById('slideshow');
+        slideshow.style.backgroundImage = `url(${yogaImages[currentIndex]})`;
+        currentIndex = (currentIndex + 1) % yogaImages.length;
+    }
+
+    setInterval(changeImage, 4000);
+    changeImage();
+</script>
+
+</body>
+</html>

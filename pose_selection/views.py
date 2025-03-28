@@ -10,6 +10,7 @@ from django.urls import reverse
 import subprocess
 import requests
 import signal
+from django.contrib.auth.decorators import login_required
 import time
 from .fastapi_manager import start_fastapi_server, stop_fastapi_server
 
@@ -129,7 +130,7 @@ def calculate_error(actual, ideal):
 
 #     return render(request, 'pose_selection/upload_image.html', {'pose_name': pose_name, 'view': view})
 
-
+@login_required
 def upload_image(request, pose_name):
     """Upload image and redirect to analysis with proper parameters."""
     if request.method == "POST" and request.FILES.get('image'):
@@ -334,7 +335,7 @@ def show_views(request, pose_name):
 
 
 
-
+@login_required
 def analyze_pose(request, pose_name):
     import mediapipe as mp
 
