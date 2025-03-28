@@ -51,6 +51,17 @@
             position: relative;
         }
 
+        .slideshow::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 17, 49, 0.607);
+            z-index: 1;
+        }
+
         .overlay-content {
             position: absolute;
             top: 50%;
@@ -81,7 +92,17 @@
         .hidden {
             display: none;
         }
+
+        .error-box {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
+
 </head>
 
 <body class="bg-light">
@@ -91,20 +112,20 @@
         <!-- Slideshow Section -->
         <div class="col-6 slideshow" id="slideshow">
             <div class="overlay-content">
-                <h1>Yoga<span class="text-primary">Align</span></h1>
+                <h1>Yoga<span style="color: #8B694D;">Align</span></h1>
                 <p>Perfect your practice with AI-powered pose correction and guidance</p>
             </div>
             <div class="feature-list">
                 <div>
-                    <i class="fas fa-check-circle text-primary"></i>
+                    <i style="color: #8B694D;" class="fas fa-check-circle "></i>
                     <span>Real-time pose analysis</span>
                 </div>
                 <div>
-                    <i class="fas fa-heart text-primary"></i>
+                    <i style="color: #8B694D;" class="fas fa-heart "></i>
                     <span>Personalized adjustments</span>
                 </div>
                 <div>
-                    <i class="fas fa-comments text-primary"></i>
+                    <i style="color: #8B694D;" class="fas fa-comments "></i>
                     <span>Instant feedback</span>
                 </div>
             </div>

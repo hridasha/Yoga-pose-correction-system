@@ -156,27 +156,102 @@ body {
 
 /*  Cards */
 .card {
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease-in-out;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    background: #F5F5F5;  /* Light Beige */
-    color: #2B3241;       /* Deep Navy Gray */
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    background: #F5F5F5 !important;  /* Light Beige */
+    color: #2B3241 !important;       /* Deep Navy Gray */
+    transition: none !important;
 }
 
 .card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    transition: none !important;
+}
+
+/* Override Bootstrap's shadow classes */
+.shadow-sm, .shadow-lg {
+    transition: none !important;
+}
+
+.shadow-sm:hover, .shadow-lg:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    transition: none !important;
+}
+
+/* Override Bootstrap's rounded classes */
+.rounded-4, .rounded-pill {
+    transition: none !important;
+}
+
+.rounded-4:hover, .rounded-pill:hover {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Override Bootstrap's border classes */
+.border-0 {
+    transition: none !important;
+}
+
+.border-0:hover {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Remove hover effects from all card components */
+.card, .card-body, .card-img-top, .card-footer, .card-header {
+    transform: none !important;
+    transition: none !important;
+}
+
+.card:hover, .card-body:hover, .card-img-top:hover, .card-footer:hover, .card-header:hover {
+    transform: none !important;
+    transition: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Remove hover effects from activity cards */
+.activity-card {
+    transition: none !important;
+}
+
+.activity-card:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Remove hover effects from tip-card */
+.tip-card {
+    transition: none !important;
+}
+
+.tip-card:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Remove hover effects from all card variants */
+.card, .card.shadow-sm, .card.shadow-lg, .card.rounded-4, .card.rounded-pill, .card.border-0 {
+    transition: none !important;
+}
+
+.card:hover, .card.shadow-sm:hover, .card.shadow-lg:hover, .card.rounded-4:hover, .card.rounded-pill:hover, .card.border-0:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    transition: none !important;
 }
 
 .card-title {
-    color: #8B694D;       /* Warm Brown */
+    color: #8B694D !important;       /* Warm Brown */
     font-weight: bold;
     font-size: 1.4rem;
 }
 
 .card-text {
-    color: #9EA2AD;       /* Muted Blue-Gray */
+    color: #9EA2AD !important;       /* Muted Blue-Gray */
 }
 
 /*  Table Styling */
@@ -277,7 +352,6 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(43, 50, 65, 0.25);
 }
 
-
 /* Override Bootstrap container width on large screens */
 @media (min-width: 1200px) {
     .container, .container-lg, .container-md, .container-sm, .container-xl {
@@ -285,6 +359,7 @@ body {
         margin: 0 auto;     /* Center the container */
     }
 }
+
 /*  Override all Bootstrap media queries */
 
 @media (min-width: 576px) {
@@ -305,4 +380,85 @@ body {
 
 @media (min-width: 1400px) {
     .container, .container-xxl { max-width: 1600px !important; }
+}
+
+/* Dropdown Menu Custom Styles */
+.dropdown-menu-custom {
+    background-color: #2B3241 !important;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 0;
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-item-custom {
+    color: #9EA2AD !important;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item-custom:hover {
+    background-color: #8B694D !important;
+    color: white !important;
+    transform: translateX(5px);
+}
+
+.dropdown-item-custom i {
+    width: 20px;
+    text-align: center;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-top: 1px solid #4A5568;
+}
+
+/* Login/Register Buttons */
+.btn-login, .btn-register {
+    background-color: #8B694D !important;
+    color: white !important;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-login:hover, .btn-register:hover {
+    background-color: #754C3F !important;
+    transform: translateY(-2px);
+}
+
+.btn-login i, .btn-register i {
+    width: 20px;
+    text-align: center;
+}
+
+/* User Dropdown Button */
+.btn-link {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    color: white !important;
+}
+
+.btn-link i {
+    font-size: 1.2rem;
+    color: #8B694D !important;
+}
+
+/* Logout Button */
+.dropdown-item-custom.text-danger {
+    color: #dc3545 !important;
+}
+
+.dropdown-item-custom.text-danger:hover {
+    background-color: #dc3545 !important;
+    color: white !important;
 }
