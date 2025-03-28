@@ -39,7 +39,7 @@
         overflow: hidden;
     }
 
-    img {
+    canvas {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -99,118 +99,213 @@
     }
 
     /*  Responsive Design */
-    @media (max-width: 1200px) {
-        .video-container {
-            height: 75vh;
-            /* Smaller height on medium screens */
-        }
-    }
-
     @media (max-width: 768px) {
         .video-container {
-            height: 60vh;
-            /* Smaller height on small screens */
-        }
-
-        .btn-yoga {
-            font-size: 16px;
-            padding: 10px 20px;
+            height: 80vh;
+            max-height: 600px;
         }
     }
 </style>
 
-
-
-<!--  Main Content -->
-<main class="container py-4">
-
-    <!--  Wide Camera Stream -->
-    <div class="row">
-        <div class="col-12">
-            <div class="video-container" id="video-container">
-                <img id="stream" src="http://127.0.0.1:8001/video" alt="YogaAI Live Stream" onerror="showBlackScreen()">
-
-            </div>
-        </div>
-        <div class="col-12 text-center mt-4">
-            <strong class="centre" style="font-size: 28px; color: #2B3241;">FastAPI Server Status:</strong>
-            <span id="server-status" class="status" style="font-size: 28px; color: #48bb78;">Checking...</span>
-        </div>
+<div class="container mt-5">
+    <div class="header">
+        <h2>Real-Time Yoga Pose Correction</h2>
     </div>
 
-    <!--  Pose Instructions & Feedback Below -->
-    <div class="row">
-        <div class="col-12">
-            <div class="instructions">
-                <h3 class="mb-3">Instructions</h3>
-                <h5>Mountain Pose</h5>
-                <p class="text-muted">Real-time guidance:</p>
-                <ul>
-                    <li>Stand with feet together</li>
-                    <li>Arms relaxed by your sides</li>
-                    <li>Shoulders back and down</li>
-                    <li>Engage your core</li>
-                    <li>Breathe deeply and steadily</li>
-                </ul>
-            </div>
-        </div>
+    <div class="video-container">
+        <canvas id="videoCanvas"></canvas>
     </div>
 
-    <!--  Control Buttons -->
-    <div class="text-center my-4">
-        <button class="btn btn-yoga" onclick="stopStream()">Stop Stream</button>
+    <div class="status">Server Status: <span id="serverStatus">Checking...</span></div>
+    <button class="btn-yoga" id="startButton">Start Stream</button>
+    <button class="btn-yoga" id="stopButton" style="display: none;">Stop Stream</button>
+
+    <div class="instructions">
+        <h3>Instructions</h3>
+        <p>1. Click "Start Stream" to begin the video feed</p>
+        <p>2. Position yourself in front of the camera</p>
+        <p>3. Click "Stop Stream" when you're done</p>
     </div>
 
-</main>
+    <div class="footer">
+        <p>Powered by YogaAI</p>
+        <p><a href="https://github.com/yourusername/yogaai" target="_blank">View on GitHub</a></p>
+    </div>
+</div>
 
-{% endblock %}
-
-{% block scripts %}
 <script>
-    //  Function to show black screen when server is down
-    function showBlackScreen() {
-        const videoContainer = document.getElementById('video-container');
-        videoContainer.innerHTML = `
-        <div style="width: 100%; height: 100%; background: black; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px;">
-            Server is not running - Please start the FastAPI server
-        </div>
-    `;
-        document.getElementById('server-status').textContent = "Server Down";
-        document.getElementById('server-status').classList.add('text-danger');
+    let canvas = document.getElementById('videoCanvas');
+    let ctx = canvas.getContext('2d');
+    let websocket = null;
+    let isStreaming = false;
+
+    // Initialize canvas size
+    function initializeCanvas() {
+        // Set canvas size to fill the container
+        const container = document.querySelector('.video-container');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        
+        // Update canvas size when window is resized
+        window.addEventListener('resize', () => {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        });
     }
 
-    //  Function to stop the stream
-    function stopStream() {
-        if (confirm("Are you sure you want to stop the stream?")) {
-            fetch('/stop_stream/', { method: 'GET' })
-                .then(response => response.json())
-                .then(data => {
-                    alert("Stream stopped!");
-                    window.location.href = '/';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+    async function connectWebSocket() {
+        try {
+            websocket = new WebSocket('ws://127.0.0.1:8001/ws/video');
+            
+            websocket.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('serverStatus').textContent = 'Connected';
+                document.getElementById('serverStatus').classList.remove('not-running');
+                // Clear canvas on successful connection
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            };
+
+            websocket.onmessage = (event) => {
+                if (isStreaming) {
+                    try {
+                        console.log('Received frame, size:', event.data.byteLength);
+                        
+                        // Create a Blob from the binary data
+                        const blob = new Blob([event.data], { type: 'image/jpeg' });
+                        
+                        // Create object URL from blob
+                        const url = URL.createObjectURL(blob);
+                        
+                        let img = new Image();
+                        img.onload = () => {
+                            console.log('Image loaded successfully, dimensions:', img.width, 'x', img.height);
+                            
+                            // Clear the canvas first
+                            ctx.fillStyle = 'black';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            
+                            // Draw the image
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            
+                            // Scale the image to fit the canvas while maintaining aspect ratio
+                            const aspectRatio = img.width / img.height;
+                            let drawWidth = canvas.width;
+                            let drawHeight = canvas.height;
+                            
+                            if (img.width > canvas.width) {
+                                drawHeight = canvas.width / aspectRatio;
+                            }
+                            if (img.height > canvas.height) {
+                                drawWidth = canvas.height * aspectRatio;
+                            }
+                            
+                            // Center the image on the canvas
+                            const x = (canvas.width - drawWidth) / 2;
+                            const y = (canvas.height - drawHeight) / 2;
+                            
+                            // Draw the scaled image
+                            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                            
+                            console.log('Frame drawn to canvas');
+                            
+                            // Clean up
+                            URL.revokeObjectURL(url);
+                        };
+                        
+                        img.onerror = () => {
+                            console.error('Error loading image');
+                            // Show error message on canvas
+                            ctx.fillStyle = 'red';
+                            ctx.font = '24px Arial';
+                            ctx.fillText('Error loading frame', 10, 50);
+                        };
+                        
+                        img.src = url;
+                    } catch (error) {
+                        console.error('Error processing frame:', error);
+                        // Show error message on canvas
+                        ctx.fillStyle = 'red';
+                        ctx.font = '24px Arial';
+                        ctx.fillText('Error processing frame', 10, 50);
+                    }
+                }
+            };
+
+            websocket.onclose = () => {
+                console.log('WebSocket disconnected');
+                document.getElementById('serverStatus').textContent = 'Disconnected';
+                document.getElementById('serverStatus').classList.add('not-running');
+                websocket = null;
+                // Show disconnected message on canvas
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'red';
+                ctx.font = '24px Arial';
+                ctx.fillText('Disconnected from server', 10, 50);
+            };
+
+            websocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                // Show error message on canvas
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'red';
+                ctx.font = '24px Arial';
+                ctx.fillText('WebSocket connection error', 10, 50);
+            };
+        } catch (error) {
+            console.error('Failed to connect to WebSocket:', error);
+            // Show connection error message on canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'red';
+            ctx.font = '24px Arial';
+            ctx.fillText('Failed to connect to server', 10, 50);
         }
     }
 
-    //  Check FastAPI Server Status
-    function checkServerStatus() {
-        fetch('http://127.0.0.1:8001/video', { method: 'GET' })
-            .then(response => {
-                if (response.ok) {
-                    document.getElementById('server-status').textContent = "Running";
-                    document.getElementById('server-status').classList.add('text-success');
-                } else {
-                    showBlackScreen();
-                }
-            })
-            .catch(() => {
-                showBlackScreen();
-            });
+    function startStream() {
+        if (!websocket) {
+            connectWebSocket();
+        }
+        isStreaming = true;
+        document.getElementById('startButton').style.display = 'none';
+        document.getElementById('stopButton').style.display = 'inline';
     }
 
-    //  Check server status on page load
-    window.onload = checkServerStatus;
+    function stopStream() {
+        isStreaming = false;
+        if (websocket) {
+            websocket.close();
+        }
+        document.getElementById('startButton').style.display = 'inline';
+        document.getElementById('stopButton').style.display = 'none';
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async function checkServerStatus() {
+        try {
+            const response = await fetch('http://127.0.0.1:8001/status');
+            const data = await response.json();
+            document.getElementById('serverStatus').textContent = `Running (${data.active_connections} connections)`;
+            document.getElementById('serverStatus').classList.remove('not-running');
+        } catch (error) {
+            document.getElementById('serverStatus').textContent = 'Not Running';
+            document.getElementById('serverStatus').classList.add('not-running');
+        }
+    }
+
+    // Initialize canvas when page loads
+    window.onload = () => {
+        initializeCanvas();
+        checkServerStatus();
+        setInterval(checkServerStatus, 5000); // Check every 5 seconds
+    };
+
+    // Add event listeners
+    document.getElementById('startButton').addEventListener('click', startStream);
+    document.getElementById('stopButton').addEventListener('click', stopStream);
 </script>
 {% endblock %}
