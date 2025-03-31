@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import math
 import numpy as np
 import cv2
 import time
@@ -52,30 +53,46 @@ class PoseDetector:
             # Head connections
             (0, 2), (2, 5), (5, 0),   # Nose ↔ Eyes ↔ Nose
             (2, 7), (5, 8),           # Eyes ↔ Ears
-            
+
             # Torso connections
             (11, 12),                 # Shoulders
             (23, 24),                 # Hips
             (11, 23), (12, 24),       # Shoulders ↔ Hips
-            
+
             # Arms connections
             (11, 13), (13, 15),       # Left Shoulder → Elbow → Wrist
             (12, 14), (14, 16),       # Right Shoulder → Elbow → Wrist
-            
+
             # Legs connections
             (23, 25), (25, 27),       # Left Hip → Knee → Ankle
             (24, 26), (26, 28)        # Right Hip → Knee → Ankle
         ]
 
-        # For stability check
+        # Stability settings
         self.previous_landmarks = None
         self.stable_time = 0
-        self.stability_threshold = 1.0  # 1 second
-        self.stability_distance_threshold = 5  # pixels
+        self.stability_threshold = 0.5  # 0.5 seconds
+        self.tolerance_range = 5  # Tolerance range ±5 pixels
+        self.last_printed_time = 0
+        self.stable_coordinates = None
+        self.needs_printing = False
 
-        # New FPS tracking variables
+        # Keypoints used for stability checks
+        self.stability_keypoints = {
+            0: "Nose",
+            11: "Left Shoulder",
+            12: "Right Shoulder",
+            23: "Left Hip",
+            24: "Right Hip",
+            13: "Left Elbow",
+            14: "Right Elbow",
+            25: "Left Knee",
+            26: "Right Knee"
+        }
+
+        # FPS tracking
         self.last_time = time.time()
-        self.fps = 30.0  # Default to 30 initially
+        self.fps = 30.0
 
     def calculate_fps(self):
         """Dynamically calculate FPS based on frame time."""
@@ -83,9 +100,12 @@ class PoseDetector:
         frame_time = current_time - self.last_time
         self.last_time = current_time
 
-        # Update FPS if frame time is valid
         if frame_time > 0:
             self.fps = 1.0 / frame_time
+        else:
+            self.fps = 30.0
+
+        return self.fps
 
     def process_frame(self, frame: np.ndarray) -> List[Tuple[float, float, float, float]]:
         """Process frame and return pose landmarks."""
@@ -108,44 +128,76 @@ class PoseDetector:
                 else:
                     landmarks.append(None)  # Placeholder for missing keypoints
 
-        # Calculate FPS dynamically
-        self.calculate_fps()
+        # Debug: Print FPS
+        print(f"Current FPS: {self.fps:.2f}")
 
-        # Check stability using dynamic FPS
+        # Check stability for specific key points
         if self.previous_landmarks is not None:
             stable = True
-            for i in range(len(landmarks)):
-                if landmarks[i] and self.previous_landmarks[i]:
-                    dist = ((landmarks[i][0] - self.previous_landmarks[i][0]) ** 2 +
-                           (landmarks[i][1] - self.previous_landmarks[i][1]) ** 2) ** 0.5
-                    if dist > self.stability_distance_threshold:
-                        stable = False
-                        break
+            unstable_points = []
 
-            # Use dynamic FPS for stability check
+            print(f"\nChecking stability for {len(self.stability_keypoints)} key points...")
+            print(f"Stability points: {list(self.stability_keypoints.values())}")
+
+            for i in self.stability_keypoints.keys():
+                if landmarks[i] and self.previous_landmarks[i]:
+                    x, y = landmarks[i][:2]
+                    prev_x, prev_y = self.previous_landmarks[i][:2]
+
+                    # Debug: Print current and previous coordinates
+                    print(f"\nChecking {self.stability_keypoints[i]}:")
+                    print(f"  Current: x={x}, y={y}")
+                    print(f"  Previous: x={prev_x}, y={prev_y}")
+                    print(f"  Distance: {abs(x-prev_x):.2f}, {abs(y-prev_y):.2f}")
+
+                    # Check if X and Y are within the tolerance range
+                    if not (prev_x - self.tolerance_range <= x <= prev_x + self.tolerance_range and
+                            prev_y - self.tolerance_range <= y <= prev_y + self.tolerance_range):
+                        unstable_points.append(self.stability_keypoints[i])
+                        stable = False
+                        print(f"  Status: UNSTABLE (Distance > {self.tolerance_range})")
+                    else:
+                        print(f"  Status: STABLE")
+
             if stable:
                 self.stable_time += 1 / self.fps
-                if self.stable_timea >= self.stability_threshold:
-                    self.print_coordinates(frame)
+                print(f"\nStability time: {self.stable_time:.2f} seconds")
+                
+                if self.stable_time >= self.stability_threshold:
+                    current_time = time.time()
+                    if current_time - self.last_printed_time >= 0.5:
+                        print("\nStable pose detected!")
+                        print(f"Stable for {self.stable_time:.2f} seconds")
+                        self.stable_coordinates = landmarks
+                        self.needs_printing = True
+                        self.last_printed_time = current_time
             else:
+                print(f"\nPose unstable - Unstable points: {unstable_points}")
                 self.stable_time = 0
+                self.needs_printing = False
 
         self.previous_landmarks = landmarks
         return landmarks
 
-    def print_coordinates(self, frame: np.ndarray):
-        """Print pose coordinates."""
-        landmarks = self.process_frame(frame)
-        print("\nStable Pose Coordinates:")
-        print(f"FPS: {self.fps:.2f}")  # Print current FPS
-        for idx, (x, y, z, confidence) in enumerate(landmarks):
-            if x is not None:  # Only print valid keypoints
-                print(f"{self.keypoints[idx]}:")
-                print(f"  X: {x}")
-                print(f"  Y: {y}")
-                print(f"  Z: {z:.4f}")
-                print(f"  Confidence: {confidence:.4f}")
-        print("-" * 50)
+    def print_coordinates(self):
+        """Print stable pose coordinates."""
+        if self.needs_printing and self.stable_coordinates:
+            print("\nStable Pose Coordinates:")
+            print("=" * 50)
+            print(f"Stability Check Points: {list(self.stability_keypoints.values())}")
+            print("=" * 50)
+            
+            for idx, (x, y, z, confidence) in enumerate(self.stable_coordinates):
+                if x is not None:  # Only print valid keypoints
+                    print(f"{self.keypoints[idx]}:")
+                    print(f"  X: {x}")
+                    print(f"  Y: {y}")
+                    print(f"  Z: {z:.4f}")
+                    print(f"  Confidence: {confidence:.4f}")
+            print("=" * 50)
+            self.needs_printing = False
+
+
 
     def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
         """Draw proper stick figure on the frame."""

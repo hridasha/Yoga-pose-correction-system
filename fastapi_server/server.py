@@ -78,8 +78,6 @@ async def process_frame(websocket: WebSocket):
                 # Resize frame
                 frame = cv2.resize(frame, (640, 480))
                 
-                coordinates = detector.print_coordinates(frame)
-                
                 # Process frame
                 landmarks = detector.process_frame(frame)
                 
@@ -87,22 +85,25 @@ async def process_frame(websocket: WebSocket):
                 if landmarks:
                     frame = detector.draw_pose_landmarks(frame, landmarks)
 
+                # Print coordinates if stable
+                detector.print_coordinates()
+
                 # Encode frame with optimized quality settings
                 _, buffer = cv2.imencode(
                     ".jpg", 
                     frame, 
-                    [int(cv2.IMWRITE_JPEG_QUALITY), 85,  # Higher quality
+                    [int(cv2.IMWRITE_JPEG_QUALITY), 90,  # Higher quality
                      int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
                      int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Progressive encoding
                 )
                 
                 frame_bytes = buffer.tobytes()
                 
-                # Send frame with proper WebSocket frame type
+                # Send frame
                 await websocket.send_bytes(frame_bytes)
                 
                 # Add small delay to prevent overwhelming the client
-                await asyncio.sleep(0.03)  # Increased from 0.01
+                await asyncio.sleep(0.01)  # Reduced delay for smoother streaming
                 
             except Exception as e:
                 logger.error(f"Error in frame processing: {str(e)}")
