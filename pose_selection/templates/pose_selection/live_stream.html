@@ -123,11 +123,20 @@
         <p>2. Position yourself in front of the camera</p>
         <p>3. Click "Stop Stream" when you're done</p>
     </div>
-
-    <div class="footer">
-        <p>Powered by YogaAI</p>
-        <p><a href="https://github.com/yourusername/yogaai" target="_blank">View on GitHub</a></p>
+    <div class="instructions">
+        <h3>Instructions</h3>
+        <p>1. Click "Start Stream" to begin the video feed</p>
+        <p>2. Position yourself in front of the camera</p>
+        <p>3. Click "Stop Stream" when you're done</p>
     </div>
+    <div class="instructions">
+        <h3>Instructions</h3>
+        <p>1. Click "Start Stream" to begin the video feed</p>
+        <p>2. Position yourself in front of the camera</p>
+        <p>3. Click "Stop Stream" when you're done</p>
+    </div>
+
+
 </div>
 
 <script>
@@ -138,12 +147,10 @@
 
     // Initialize canvas size
     function initializeCanvas() {
-        // Set canvas size to fill the container
         const container = document.querySelector('.video-container');
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
         
-        // Update canvas size when window is resized
         window.addEventListener('resize', () => {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
@@ -158,34 +165,24 @@
                 console.log('WebSocket connected');
                 document.getElementById('serverStatus').textContent = 'Connected';
                 document.getElementById('serverStatus').classList.remove('not-running');
-                // Clear canvas on successful connection
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                isStreaming = true;
             };
 
             websocket.onmessage = (event) => {
                 if (isStreaming) {
                     try {
-                        console.log('Received frame, size:', event.data.byteLength);
-                        
-                        // Create a Blob from the binary data
-                        const blob = new Blob([event.data], { type: 'image/jpeg' });
-                        
-                        // Create object URL from blob
+                        const arrayBuffer = event.data;
+                        const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
                         const url = URL.createObjectURL(blob);
                         
-                        let img = new Image();
+                        const img = new Image();
                         img.onload = () => {
-                            console.log('Image loaded successfully, dimensions:', img.width, 'x', img.height);
-                            
-                            // Clear the canvas first
                             ctx.fillStyle = 'black';
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                             
-                            // Draw the image
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            
-                            // Scale the image to fit the canvas while maintaining aspect ratio
+                            // Calculate aspect ratio and draw image
                             const aspectRatio = img.width / img.height;
                             let drawWidth = canvas.width;
                             let drawHeight = canvas.height;
@@ -197,81 +194,36 @@
                                 drawWidth = canvas.height * aspectRatio;
                             }
                             
-                            // Center the image on the canvas
                             const x = (canvas.width - drawWidth) / 2;
                             const y = (canvas.height - drawHeight) / 2;
                             
-                            // Draw the scaled image
                             ctx.drawImage(img, x, y, drawWidth, drawHeight);
-                            
-                            // Draw keypoints
-                            ctx.strokeStyle = 'yellow';
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            ctx.arc(x + 100, y + 100, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            ctx.beginPath();
-                            ctx.arc(x + 200, y + 200, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            ctx.beginPath();
-                            ctx.arc(x + 300, y + 300, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            
-                            console.log('Frame drawn to canvas');
-                            
-                            // Clean up
                             URL.revokeObjectURL(url);
-                        };
-                        
-                        img.onerror = () => {
-                            console.error('Error loading image');
-                            // Show error message on canvas
-                            ctx.fillStyle = 'red';
-                            ctx.font = '24px Arial';
-                            ctx.fillText('Error loading frame', 10, 50);
                         };
                         
                         img.src = url;
                     } catch (error) {
                         console.error('Error processing frame:', error);
-                        // Show error message on canvas
-                        ctx.fillStyle = 'red';
-                        ctx.font = '24px Arial';
-                        ctx.fillText('Error processing frame', 10, 50);
                     }
                 }
             };
 
             websocket.onclose = () => {
                 console.log('WebSocket disconnected');
+                isStreaming = false;
                 document.getElementById('serverStatus').textContent = 'Disconnected';
                 document.getElementById('serverStatus').classList.add('not-running');
-                websocket = null;
-                // Show disconnected message on canvas
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.font = '24px Arial';
-                ctx.fillText('Disconnected from server', 10, 50);
             };
 
             websocket.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                // Show error message on canvas
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.font = '24px Arial';
-                ctx.fillText('WebSocket connection error', 10, 50);
+                isStreaming = false;
+                document.getElementById('serverStatus').textContent = 'Error';
+                document.getElementById('serverStatus').classList.add('not-running');
             };
+
         } catch (error) {
-            console.error('Failed to connect to WebSocket:', error);
-            // Show connection error message on canvas
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'red';
-            ctx.font = '24px Arial';
-            ctx.fillText('Failed to connect to server', 10, 50);
+            console.error('Error connecting to WebSocket:', error);
         }
     }
 
@@ -311,11 +263,14 @@
     window.onload = () => {
         initializeCanvas();
         checkServerStatus();
-        setInterval(checkServerStatus, 5000); // Check every 5 seconds
+        setInterval(checkServerStatus, 5000);
     };
 
     // Add event listeners
     document.getElementById('startButton').addEventListener('click', startStream);
     document.getElementById('stopButton').addEventListener('click', stopStream);
 </script>
+
+
+
 {% endblock %}

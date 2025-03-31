@@ -7,10 +7,22 @@ import numpy as np
 import io
 from typing import List, Dict, Tuple
 from pose_utils import PoseDetector
+import signal
+import sys
+
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Add these imports at the top of your file
+def shutdown_handler(signum, frame):
+    logger.info("Shutting down server...")
+    sys.exit(0)
+
+# Add this before app creation
+signal.signal(signal.SIGINT, shutdown_handler)
+signal.signal(signal.SIGTERM, shutdown_handler)
 
 app = FastAPI()
 
@@ -30,77 +42,118 @@ active_connections = set()
 pose_detector = None
 
 def get_pose_detector():
+    """
+    Initializes the PoseDetector once and reuses the same instance
+    to optimize performance.
+    """
     global pose_detector
     if pose_detector is None:
         pose_detector = PoseDetector()
+        logger.info("PoseDetector initialized")
     return pose_detector
 
-async def process_frame(websocket):
+async def process_frame(websocket: WebSocket):
+    """
+    Continuously captures frames from the camera, processes them for pose detection,
+    draws landmarks, prints coordinates, and streams them to the client via WebSockets.
+    """
     cap = cv2.VideoCapture(0)
+    
     if not cap.isOpened():
         logger.error("Failed to open camera")
         return
     
     logger.info("Camera opened successfully")
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            logger.error("Failed to read frame from camera")
-            break
+    detector = get_pose_detector()
 
-        # Resize frame to reduce bandwidth
-        frame = cv2.resize(frame, (640, 480))
-        
-        # Process frame with pose detection
-        detector = get_pose_detector()
-        landmarks = detector.process_frame(frame)
-        
-        if landmarks:
-            # Draw the pose landmarks on the frame
-            frame = detector.draw_pose_landmarks(frame, landmarks)
-        
-        # Encode frame with optimized quality settings
-        _, buffer = cv2.imencode(
-            ".jpg", 
-            frame, 
-            [int(cv2.IMWRITE_JPEG_QUALITY), 75,  # Medium quality
-             int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
-             int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Enable progressive encoding
-        )
-        frame_bytes = buffer.tobytes()
-        
-        try:
-            logger.debug(f"Sending frame of size: {len(frame_bytes)} bytes")
-            await websocket.send_bytes(frame_bytes)
-            await asyncio.sleep(0.01)  # Small delay to prevent overwhelming the client
-        except WebSocketDisconnect:
-            logger.info("WebSocket disconnected")
-            break
+    try:
+        while True:
+            try:
+                # Read frame
+                ret, frame = cap.read()
+                if not ret:
+                    logger.error("Failed to read frame from camera")
+                    break
 
-    cap.release()
-    logger.info("Camera released")
+                # Resize frame
+                frame = cv2.resize(frame, (640, 480))
+                
+                coordinates = detector.print_coordinates(frame)
+                
+                # Process frame
+                landmarks = detector.process_frame(frame)
+                
+                # Draw landmarks
+                if landmarks:
+                    frame = detector.draw_pose_landmarks(frame, landmarks)
+
+                # Encode frame with optimized quality settings
+                _, buffer = cv2.imencode(
+                    ".jpg", 
+                    frame, 
+                    [int(cv2.IMWRITE_JPEG_QUALITY), 85,  # Higher quality
+                     int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
+                     int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Progressive encoding
+                )
+                
+                frame_bytes = buffer.tobytes()
+                
+                # Send frame with proper WebSocket frame type
+                await websocket.send_bytes(frame_bytes)
+                
+                # Add small delay to prevent overwhelming the client
+                await asyncio.sleep(0.03)  # Increased from 0.01
+                
+            except Exception as e:
+                logger.error(f"Error in frame processing: {str(e)}")
+                continue
+                
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected")
+        
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        
+    finally:
+        cap.release()
+        logger.info("Camera released")
 
 @app.websocket("/ws/video")
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint that handles real-time video streaming.
+    """
     logger.info("WebSocket connection attempt")
     
-    await websocket.accept()
-    logger.info("WebSocket connection accepted")
-    
-    active_connections.add(websocket)
-    logger.info(f"Active connections: {len(active_connections)}")
-    
     try:
-        await process_frame(websocket)
-    except WebSocketDisconnect:
-        logger.info("WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"Error in WebSocket endpoint: {str(e)}")
-    finally:
-        active_connections.remove(websocket)
+        await websocket.accept()
+        logger.info("WebSocket connection accepted")
+        
+        active_connections.add(websocket)
         logger.info(f"Active connections: {len(active_connections)}")
+        
+        try:
+            await process_frame(websocket)
+            
+        except WebSocketDisconnect:
+            logger.info("WebSocket disconnected")
+            active_connections.remove(websocket)
+            
+        except Exception as e:
+            logger.error(f"Error in WebSocket endpoint: {str(e)}")
+            
+    except Exception as e:
+        logger.error(f"Error accepting WebSocket connection: {str(e)}")
+
 
 @app.get("/status")
 async def server_status():
+    """
+    Endpoint to check server status.
+    """
     return {"status": "running", "active_connections": len(active_connections)}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8001, reload=True)

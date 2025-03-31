@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 import cv2
+import time
 
 # Lazy import MediaPipe
 _mp_pose = None
@@ -66,7 +67,27 @@ class PoseDetector:
             (24, 26), (26, 28)        # Right Hip → Knee → Ankle
         ]
 
-    def process_frame(self, frame: np.ndarray) -> List[Tuple[float, float, float]]:
+        # For stability check
+        self.previous_landmarks = None
+        self.stable_time = 0
+        self.stability_threshold = 1.0  # 1 second
+        self.stability_distance_threshold = 5  # pixels
+
+        # New FPS tracking variables
+        self.last_time = time.time()
+        self.fps = 30.0  # Default to 30 initially
+
+    def calculate_fps(self):
+        """Dynamically calculate FPS based on frame time."""
+        current_time = time.time()
+        frame_time = current_time - self.last_time
+        self.last_time = current_time
+
+        # Update FPS if frame time is valid
+        if frame_time > 0:
+            self.fps = 1.0 / frame_time
+
+    def process_frame(self, frame: np.ndarray) -> List[Tuple[float, float, float, float]]:
         """Process frame and return pose landmarks."""
         # Convert BGR to RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -82,13 +103,51 @@ class PoseDetector:
                     x = int(landmark.x * frame.shape[1])
                     y = int(landmark.y * frame.shape[0])
                     z = landmark.z
-                    landmarks.append((x, y, z))
+                    confidence = landmark.visibility
+                    landmarks.append((x, y, z, confidence))
                 else:
                     landmarks.append(None)  # Placeholder for missing keypoints
 
+        # Calculate FPS dynamically
+        self.calculate_fps()
+
+        # Check stability using dynamic FPS
+        if self.previous_landmarks is not None:
+            stable = True
+            for i in range(len(landmarks)):
+                if landmarks[i] and self.previous_landmarks[i]:
+                    dist = ((landmarks[i][0] - self.previous_landmarks[i][0]) ** 2 +
+                           (landmarks[i][1] - self.previous_landmarks[i][1]) ** 2) ** 0.5
+                    if dist > self.stability_distance_threshold:
+                        stable = False
+                        break
+
+            # Use dynamic FPS for stability check
+            if stable:
+                self.stable_time += 1 / self.fps
+                if self.stable_timea >= self.stability_threshold:
+                    self.print_coordinates(frame)
+            else:
+                self.stable_time = 0
+
+        self.previous_landmarks = landmarks
         return landmarks
 
-    def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float]]) -> np.ndarray:
+    def print_coordinates(self, frame: np.ndarray):
+        """Print pose coordinates."""
+        landmarks = self.process_frame(frame)
+        print("\nStable Pose Coordinates:")
+        print(f"FPS: {self.fps:.2f}")  # Print current FPS
+        for idx, (x, y, z, confidence) in enumerate(landmarks):
+            if x is not None:  # Only print valid keypoints
+                print(f"{self.keypoints[idx]}:")
+                print(f"  X: {x}")
+                print(f"  Y: {y}")
+                print(f"  Z: {z:.4f}")
+                print(f"  Confidence: {confidence:.4f}")
+        print("-" * 50)
+
+    def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
         """Draw proper stick figure on the frame."""
         # Draw connections
         for p1, p2 in self.connections:
