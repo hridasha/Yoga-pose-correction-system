@@ -1,5 +1,4 @@
 from typing import List, Tuple
-import math
 import numpy as np
 import cv2
 import time
@@ -30,65 +29,32 @@ class PoseDetector:
         # Keypoints dictionary
         self.keypoints = {
             0: "Nose",
-            2: "Left Eye (Inner)",
-            5: "Right Eye (Inner)",
-            7: "Left Ear",
-            8: "Right Ear",
             11: "Left Shoulder",
             12: "Right Shoulder",
-            13: "Left Elbow",
-            14: "Right Elbow",
-            15: "Left Wrist",
-            16: "Right Wrist",
             23: "Left Hip",
             24: "Right Hip",
+            13: "Left Elbow",
+            14: "Right Elbow",
             25: "Left Knee",
             26: "Right Knee",
             27: "Left Ankle",
-            28: "Right Ankle"
+            28: "Right Ankle",
+            15: "Left Wrist",
+            16: "Right Wrist"
         }
 
-        # Stick figure connections
-        self.connections = [
-            # Head connections
-            (0, 2), (2, 5), (5, 0),   # Nose ↔ Eyes ↔ Nose
-            (2, 7), (5, 8),           # Eyes ↔ Ears
-
-            # Torso connections
-            (11, 12),                 # Shoulders
-            (23, 24),                 # Hips
-            (11, 23), (12, 24),       # Shoulders ↔ Hips
-
-            # Arms connections
-            (11, 13), (13, 15),       # Left Shoulder → Elbow → Wrist
-            (12, 14), (14, 16),       # Right Shoulder → Elbow → Wrist
-
-            # Legs connections
-            (23, 25), (25, 27),       # Left Hip → Knee → Ankle
-            (24, 26), (26, 28)        # Right Hip → Knee → Ankle
-        ]
+        # Stability keypoints
+        self.stability_keypoints = list(self.keypoints.keys())
 
         # Stability settings
         self.previous_landmarks = None
         self.stable_time = 0
-        self.stability_threshold = 0.5  # 0.5 seconds
-        self.tolerance_range = 5  # Tolerance range ±5 pixels
-        self.last_printed_time = 0
+        self.stability_threshold = 0.1  # 1 second threshold for stability
+        self.tolerance_range = 5  # ±5 pixels tolerance
         self.stable_coordinates = None
         self.needs_printing = False
-
-        # Keypoints used for stability checks
-        self.stability_keypoints = {
-            0: "Nose",
-            11: "Left Shoulder",
-            12: "Right Shoulder",
-            23: "Left Hip",
-            24: "Right Hip",
-            13: "Left Elbow",
-            14: "Right Elbow",
-            25: "Left Knee",
-            26: "Right Knee"
-        }
+        self.pause_stability = False
+        self.pause_time = 0
 
         # FPS tracking
         self.last_time = time.time()
@@ -119,84 +85,126 @@ class PoseDetector:
         landmarks = []
         if results.pose_landmarks:
             for i, landmark in enumerate(results.pose_landmarks.landmark):
-                if i in self.keypoints:  # Only include the 17 keypoints
-                    x = int(landmark.x * frame.shape[1])
-                    y = int(landmark.y * frame.shape[0])
-                    z = landmark.z
-                    confidence = landmark.visibility
-                    landmarks.append((x, y, z, confidence))
-                else:
-                    landmarks.append(None)  # Placeholder for missing keypoints
+                x = int(landmark.x * frame.shape[1])
+                y = int(landmark.y * frame.shape[0])
+                z = landmark.z
+                confidence = landmark.visibility
+                landmarks.append((x, y, z, confidence))
+        else:
+            # If no landmarks detected, return empty
+            return []
 
         # Debug: Print FPS
         print(f"Current FPS: {self.fps:.2f}")
 
-        # Check stability for specific key points
+        # Skip stability checking during pause period
+        if self.pause_stability:
+            if time.time() - self.pause_time >= 1.0:  # Pause for 1 second
+                self.pause_stability = False
+                print("\nResuming stability checking...")
+            return landmarks
+
+        # Stability check
         if self.previous_landmarks is not None:
-            stable = True
-            unstable_points = []
+            stable_points = 0
 
-            print(f"\nChecking stability for {len(self.stability_keypoints)} key points...")
-            print(f"Stability points: {list(self.stability_keypoints.values())}")
+            for idx in self.stability_keypoints:
+                if landmarks[idx] and self.previous_landmarks[idx]:
+                    x, y = landmarks[idx][:2]
+                    prev_x, prev_y = self.previous_landmarks[idx][:2]
 
-            for i in self.stability_keypoints.keys():
-                if landmarks[i] and self.previous_landmarks[i]:
-                    x, y = landmarks[i][:2]
-                    prev_x, prev_y = self.previous_landmarks[i][:2]
-
-                    # Debug: Print current and previous coordinates
-                    print(f"\nChecking {self.stability_keypoints[i]}:")
-                    print(f"  Current: x={x}, y={y}")
-                    print(f"  Previous: x={prev_x}, y={prev_y}")
-                    print(f"  Distance: {abs(x-prev_x):.2f}, {abs(y-prev_y):.2f}")
-
-                    # Check if X and Y are within the tolerance range
-                    if not (prev_x - self.tolerance_range <= x <= prev_x + self.tolerance_range and
+                    # Check stability
+                    if (prev_x - self.tolerance_range <= x <= prev_x + self.tolerance_range and
                             prev_y - self.tolerance_range <= y <= prev_y + self.tolerance_range):
-                        unstable_points.append(self.stability_keypoints[i])
-                        stable = False
-                        print(f"  Status: UNSTABLE (Distance > {self.tolerance_range})")
-                    else:
-                        print(f"  Status: STABLE")
+                        stable_points += 1
 
-            if stable:
+            # Print stability status
+            print(f"\nStable Points: {stable_points}/{len(self.stability_keypoints)}")
+
+            if stable_points >= 5:  # More than 5 stable keypoints
                 self.stable_time += 1 / self.fps
-                print(f"\nStability time: {self.stable_time:.2f} seconds")
-                
+
                 if self.stable_time >= self.stability_threshold:
-                    current_time = time.time()
-                    if current_time - self.last_printed_time >= 0.5:
-                        print("\nStable pose detected!")
-                        print(f"Stable for {self.stable_time:.2f} seconds")
-                        self.stable_coordinates = landmarks
-                        self.needs_printing = True
-                        self.last_printed_time = current_time
+                    print("\nPose Stable!")
+                    print(f"Stable for {self.stable_time:.2f} seconds")
+
+                    # Store stable coordinates
+                    self.stable_coordinates = landmarks
+                    self.needs_printing = True
+
+                    # Pause stability checking
+                    self.pause_stability = True
+                    self.pause_time = time.time()
+
+                    # Print stable coordinates and angles
+                    self.print_stable_coordinates()
+
             else:
-                print(f"\nPose unstable - Unstable points: {unstable_points}")
                 self.stable_time = 0
-                self.needs_printing = False
 
         self.previous_landmarks = landmarks
         return landmarks
 
-    def print_coordinates(self):
-        """Print stable pose coordinates."""
+    def print_stable_coordinates(self):
+        """Print stable pose X, Y, Z coordinates and angles."""
         if self.needs_printing and self.stable_coordinates:
-            print("\nStable Pose Coordinates:")
-            print("=" * 50)
-            print(f"Stability Check Points: {list(self.stability_keypoints.values())}")
-            print("=" * 50)
-            
+            print("\n Stable Pose Coordinates and Angles:")
+            print("=" * 60)
+
+            # Print the coordinates
             for idx, (x, y, z, confidence) in enumerate(self.stable_coordinates):
-                if x is not None:  # Only print valid keypoints
+                if idx in self.keypoints:
                     print(f"{self.keypoints[idx]}:")
                     print(f"  X: {x}")
                     print(f"  Y: {y}")
                     print(f"  Z: {z:.4f}")
                     print(f"  Confidence: {confidence:.4f}")
-            print("=" * 50)
+                    print("-" * 40)
+
+            # Calculate and print angles
+            angles = self.calculate_pose_angles()
+            print("\n Calculated Angles:")
+            for angle_name, value in angles.items():
+                print(f"{angle_name}: {value:.2f}°")
+
+            print("=" * 60)
             self.needs_printing = False
 
+    def calculate_pose_angles(self) -> dict:
+        """Calculate angles from stable coordinates."""
+        angle_definitions = {
+            "Left_Elbow_Angle": [11, 13, 15],
+            "Right_Elbow_Angle": [12, 14, 16],
+            "Left_Shoulder_Angle": [23, 11, 13],
+            "Right_Shoulder_Angle": [24, 12, 14],
+            "Left_Hip_Angle": [11, 23, 25],
+            "Right_Hip_Angle": [12, 24, 26],
+            "Left_Knee_Angle": [23, 25, 27],
+            "Right_Knee_Angle": [24, 26, 28],
+        }
+
+        angles = {}
+
+        if self.stable_coordinates:
+            for angle_name, points in angle_definitions.items():
+                if all(p < len(self.stable_coordinates) for p in points):
+                    a = self.stable_coordinates[points[0]][:2]
+                    b = self.stable_coordinates[points[1]][:2]
+                    c = self.stable_coordinates[points[2]][:2]
+
+                    # Calculate angle
+                    angle = self.calculate_angle(a, b, c)
+                    angles[angle_name] = angle
+
+        return angles
+
+    def calculate_angle(self, a, b, c):
+        """Calculate the angle between three points."""
+        a, b, c = np.array(a), np.array(b), np.array(c)
+        ba = a - b
+        bc = c - b
+        cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        return np.degrees(np.arccos(np.clip(cosine_angle, -1.0, 1.0)))
 
 
     def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
