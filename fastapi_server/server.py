@@ -24,6 +24,12 @@ def shutdown_handler(signum, frame):
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
 
+# Initialize pose detector
+MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
+POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
+pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
+
+# Initialize FastAPI app
 app = FastAPI()
 
 # Add CORS Middleware to handle Django-FastAPI communication
@@ -38,88 +44,6 @@ app.add_middleware(
 # Store active WebSocket connections
 active_connections = set()
 
-# Initialize pose detector only when needed
-pose_detector = None
-
-def get_pose_detector():
-    """
-    Initializes the PoseDetector once and reuses the same instance
-    to optimize performance.
-    """
-    global pose_detector
-    if pose_detector is None:
-        pose_detector = PoseDetector()  
-        logger.info("PoseDetector initialized")
-    return pose_detector
-
-
-# async def process_frame(websocket: WebSocket):
-#     """
-#     Continuously captures frames from the camera, processes them for pose detection,
-#     draws landmarks, prints coordinates, and streams them to the client via WebSockets.
-#     """
-#     cap = cv2.VideoCapture(0)
-    
-#     if not cap.isOpened():
-#         logger.error("Failed to open camera")
-#         return
-    
-#     logger.info("Camera opened successfully")
-#     detector = get_pose_detector()
-
-#     try:
-#         while True:
-#             try:
-#                 # Read frame
-#                 ret, frame = cap.read()
-#                 if not ret:
-#                     logger.error("Failed to read frame from camera")
-#                     break
-
-#                 # Resize frame
-#                 frame = cv2.resize(frame, (640, 480))
-                
-#                 # Process frame
-#                 landmarks = detector.process_frame(frame)
-                
-#                 # Draw landmarks
-#                 if landmarks:
-#                     frame = detector.draw_pose_landmarks(frame, landmarks)
-
-#                 # Print coordinates if stable
-#                 detector.print_stable_coordinates()
-
-#                 # Encode frame with optimized quality settings
-#                 _, buffer = cv2.imencode(
-#                     ".jpg", 
-#                     frame, 
-#                     [int(cv2.IMWRITE_JPEG_QUALITY), 90,  # Higher quality
-#                      int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
-#                      int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Progressive encoding
-#                 )
-                
-#                 frame_bytes = buffer.tobytes()
-                
-#                 # Send frame
-#                 await websocket.send_bytes(frame_bytes)
-                
-#                 # Add small delay to prevent overwhelming the client
-#                 await asyncio.sleep(0.01)  # Reduced delay for smoother streaming
-                
-#             except Exception as e:
-#                 logger.error(f"Error in frame processing: {str(e)}")
-#                 continue
-                
-#     except WebSocketDisconnect:
-#         logger.info("WebSocket disconnected")
-        
-#     except Exception as e:
-#         logger.error(f"Unexpected error: {str(e)}")
-        
-#     finally:
-#         cap.release()
-#         logger.info("Camera released")
-
 async def process_frame(websocket: WebSocket):
     """
     Continuously captures frames from the camera, processes them for pose detection,
@@ -132,7 +56,7 @@ async def process_frame(websocket: WebSocket):
         return
     
     logger.info("Camera opened successfully")
-    detector = get_pose_detector()  # Get the PoseDetector here
+    detector = pose_detector  # Use the initialized pose detector
 
     try:
         while True:
@@ -212,36 +136,6 @@ async def websocket_endpoint(websocket: WebSocket):
         
     finally:
         logger.info("WebSocket connection closed")
-
-
-
-# @app.websocket("/ws/video")
-# async def websocket_endpoint(websocket: WebSocket):
-#     """
-#     WebSocket endpoint that handles real-time video streaming.
-#     """
-#     logger.info("WebSocket connection attempt")
-    
-#     try:
-#         await websocket.accept()
-#         logger.info("WebSocket connection accepted")
-        
-#         active_connections.add(websocket)
-#         logger.info(f"Active connections: {len(active_connections)}")
-        
-#         try:
-#             await process_frame(websocket)
-            
-#         except WebSocketDisconnect:
-#             logger.info("WebSocket disconnected")
-#             active_connections.remove(websocket)
-            
-#         except Exception as e:
-#             logger.error(f"Error in WebSocket endpoint: {str(e)}")
-            
-#     except Exception as e:
-#         logger.error(f"Error accepting WebSocket connection: {str(e)}")
-
 
 @app.get("/status")
 async def server_status():
