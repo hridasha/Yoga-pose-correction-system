@@ -1,7 +1,9 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import numpy as np
 import cv2
 import time
+import tensorflow as tf
+import pickle
 
 # Lazy import MediaPipe
 _mp_pose = None
@@ -14,6 +16,14 @@ def _get_mp_pose():
         _mp_pose = mp.solutions.pose
     return _mp_pose
 
+# Load model and pose classes
+def _load_model_and_classes():
+    global _model, _pose_classes
+    if '_model' not in globals():
+        _model = tf.keras.models.load_model(r'D:\YogaPC\ypc\datasets\final_student_model_35.keras')
+        with open(r'D:\YogaPC\ypc\datasets\pose_classes.pkl', 'rb') as f:
+            _pose_classes = pickle.load(f)
+    return _model, _pose_classes
 
 class PoseDetector:
     def __init__(self):
@@ -25,6 +35,9 @@ class PoseDetector:
             min_detection_confidence=0.5,
             min_tracking_confidence=0.6
         )
+
+        # Load model and classes
+        self.model, self.pose_classes = _load_model_and_classes()
 
         # Keypoints dictionary
         self.keypoints = {
@@ -49,7 +62,8 @@ class PoseDetector:
         # Stability settings
         self.previous_landmarks = None
         self.stable_time = 0
-        self.stability_threshold = 0.1  # 1 second threshold for stability
+        self.connections = []
+        self.stability_threshold = 2  # 1 second threshold for stability
         self.tolerance_range = 5  # ±5 pixels tolerance
         self.stable_coordinates = None
         self.needs_printing = False
@@ -146,7 +160,7 @@ class PoseDetector:
         return landmarks
 
     def print_stable_coordinates(self):
-        """Print stable pose X, Y, Z coordinates and angles."""
+        """Print stable pose X, Y, Z coordinates, angles, and classification."""
         if self.needs_printing and self.stable_coordinates:
             print("\n Stable Pose Coordinates and Angles:")
             print("=" * 60)
@@ -167,10 +181,40 @@ class PoseDetector:
             for angle_name, value in angles.items():
                 print(f"{angle_name}: {value:.2f}°")
 
+            # Classify pose
+            if self.stable_coordinates:
+                # Prepare the input data - flatten the coordinates to match model's expected shape
+                input_data = []
+                for coord in self.stable_coordinates:
+                    # Add X, Y, Z coordinates (confidence is not used by the model)
+                    input_data.extend(coord[:3])
+                
+                # Add zeros for any missing keypoints to match the expected 71 features
+                while len(input_data) < 71:
+                    input_data.extend([0, 0, 0])  # Add zeros for X, Y, Z
+                
+                # Convert to numpy array and add batch dimension
+                input_data = np.array(input_data[:71])  # Truncate to 71 features if needed
+                input_data = np.expand_dims(input_data, axis=0)
+                
+                # Predict pose
+                prediction = self.model.predict(input_data)
+                predicted_class_idx = np.argmax(prediction)
+                predicted_class = self.pose_classes[predicted_class_idx]
+                confidence = prediction[0][predicted_class_idx]
+                # Print classification with confidence threshold
+                confidence_threshold = 0.7  # Set confidence threshold
+                print("\n Pose Classification:")
+                if confidence >= confidence_threshold:
+                    print(f"Predicted Pose: {predicted_class}")
+                else:
+                    print("Predicted Pose: Unknown Pose")
+                print(f"Confidence: {confidence:.2f}")
+
             print("=" * 60)
             self.needs_printing = False
 
-    def calculate_pose_angles(self) -> dict:
+    def calculate_pose_angles(self) -> Dict[str, float]:
         """Calculate angles from stable coordinates."""
         angle_definitions = {
             "Left_Elbow_Angle": [11, 13, 15],
@@ -205,7 +249,6 @@ class PoseDetector:
         bc = c - b
         cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
         return np.degrees(np.arccos(np.clip(cosine_angle, -1.0, 1.0)))
-
 
     def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
         """Draw proper stick figure on the frame."""

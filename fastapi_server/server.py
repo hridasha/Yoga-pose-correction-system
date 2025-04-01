@@ -86,7 +86,7 @@ async def process_frame(websocket: WebSocket):
                     frame = detector.draw_pose_landmarks(frame, landmarks)
 
                 # Print coordinates if stable
-                detector.print_coordinates()
+                detector.print_stable_coordinates()
 
                 # Encode frame with optimized quality settings
                 _, buffer = cv2.imencode(
