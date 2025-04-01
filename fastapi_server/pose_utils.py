@@ -63,8 +63,8 @@ class PoseDetector:
         self.previous_landmarks = None
         self.stable_time = 0
         self.connections = []
-        self.stability_threshold = 2  # 1 second threshold for stability
-        self.tolerance_range = 5  # ±5 pixels tolerance
+        self.stability_threshold = 0.5  
+        self.tolerance_range = 5  
         self.stable_coordinates = None
         self.needs_printing = False
         self.pause_stability = False
@@ -113,7 +113,7 @@ class PoseDetector:
 
         # Skip stability checking during pause period
         if self.pause_stability:
-            if time.time() - self.pause_time >= 1.0:  # Pause for 1 second
+            if time.time() - self.pause_time >= 2.0:  # Pause for 1 second
                 self.pause_stability = False
                 print("\nResuming stability checking...")
             return landmarks
