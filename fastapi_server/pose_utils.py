@@ -8,8 +8,25 @@ import os
 from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
+import os
+import django
+import sys
+from asgiref.sync import sync_to_async
 
-# Lazy import MediaPipe
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ypc.settings')
+django.setup()
+# from pose_selection.models import YogaPoseIdealAngle
+
+try:
+    from pose_selection.models import YogaPoseIdealAngle
+except ImportError as e:
+    print(f"Error importing model: {e}")
+
+
 _mp_pose = None
 
 def _get_mp_pose():
@@ -67,7 +84,6 @@ class PoseDetector:
             28: "Right Ankle"
         }
 
-        # Load MediaPipe pose model
         mp_pose = _get_mp_pose()
         self.pose = mp_pose.Pose(
             static_image_mode=False,
@@ -76,15 +92,13 @@ class PoseDetector:
             min_tracking_confidence=0.6
         )
 
-        # Stability settings
         self.previous_landmarks = None
         self.stable_time = 0
         self.stability_threshold = 0.5  
         self.tolerance_range = 5  
         self.pause_stability = False
         self.pause_time = 0
-
-        # FPS tracking
+        
         self.last_time = time.time()
         self.fps = 30.0
 
@@ -107,10 +121,68 @@ class PoseDetector:
             self.fps = 30.0
 
         return self.fps
-
-    def process_frame(self, frame: np.ndarray) -> List[Tuple[float, float, float, float]]:
+    
+    # async def classify_pose(self, landmarks):
+    #     """Classify the pose using the loaded model."""
+    #     if not landmarks:
+    #         return "No pose detected"
+            
+    #     # Prepare the input data for the model
+    #     input_data = []
+    #     for landmark in landmarks:
+    #         if landmark:
+    #             input_data.extend(landmark[:3])  # Add x, y, z coordinates
+    #         else:
+    #             input_data.extend([0, 0, 0])  # Add zeros for missing landmarks
+        
+    #     # Convert to numpy array and reshape
+    #     input_array = np.array([input_data])
+        
+    #     # Get predictions
+    #     predictions = self.model.predict(input_array)
+    #     predicted_class_idx = np.argmax(predictions[0])
+    #     predicted_class = self.pose_classes[predicted_class_idx]
+    #     confidence = predictions[0][predicted_class_idx]
+        
+    #     return predicted_class, confidence
+    async def classify_pose(self, landmarks):
+        """Classify the pose using the loaded model."""
+        if not landmarks:
+            return "No pose detected", 0.0
+            
+        try:
+            model_keypoints = [0,2 ,5 ,7,8,11,12,13,14,15,16,23,24,25,26,27,28]
+            
+            input_data = []
+            for idx in model_keypoints:
+                if idx < len(landmarks) and landmarks[idx]:
+                    input_data.extend(landmarks[idx][:3])
+                else:
+                    input_data.extend([0, 0, 0])  # Add zeros for missing landmarks
+            
+            # Ensure we have exactly 71 features
+            if len(input_data) > 71:
+                input_data = input_data[:71]
+            elif len(input_data) < 71:
+                input_data.extend([0] * (71 - len(input_data)))
+            
+            # Convert to numpy array and reshape
+            input_array = np.array([input_data])
+            
+            # Get predictions
+            predictions = self.model.predict(input_array)
+            predicted_class_idx = np.argmax(predictions[0])
+            predicted_class = self.pose_classes[predicted_class_idx]
+            confidence = predictions[0][predicted_class_idx]
+            
+            return predicted_class, confidence
+            
+        except Exception as e:
+            print(f"Error in model prediction: {e}")
+            return "Unknown", 0.0
+    
+    async def process_frame(self, frame: np.ndarray) -> List[Tuple[float, float, float, float]]:
         """Process frame and return pose landmarks."""
-        # Convert BGR to RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # Run pose detection
@@ -134,7 +206,7 @@ class PoseDetector:
 
         # Skip stability checking during pause period
         if self.pause_stability:
-            if time.time() - self.pause_time >= 2.0:  # Pause for 1 second
+            if time.time() - self.pause_time >= 20.0:  
                 self.pause_stability = False
                 print("\nResuming stability checking...")
             return landmarks
@@ -148,7 +220,6 @@ class PoseDetector:
                     x, y = landmarks[idx][:2]
                     prev_x, prev_y = self.previous_landmarks[idx][:2]
 
-                    # Check stability
                     if (prev_x - self.tolerance_range <= x <= prev_x + self.tolerance_range and
                             prev_y - self.tolerance_range <= y <= prev_y + self.tolerance_range):
                         stable_points += 1
@@ -172,7 +243,47 @@ class PoseDetector:
                     self.pause_time = time.time()
 
                     # Print stable coordinates and angles
-                    self.print_stable_coordinates()
+                    await self.print_stable_coordinates()
+                    
+                    
+                    
+                    
+                    
+                    self.stability_pause = True
+                    
+                    
+                    
+                    
+                    
+                    
+                    pose_class, confidence = await self.classify_pose(landmarks)
+                    print(f"\nDetected Pose: {pose_class}")
+                    print(f"Confidence: {confidence:.2f}")
+
+                    view = self.classify_view(landmarks)
+                    print(f"\nView Classification:")
+                    print(f"Current View: {view}")
+
+                    try:
+                        ideal_angles = await self.get_ideal_angles(pose_class)
+                        print("\nIdeal Angles:")
+                        if ideal_angles:
+                            for angle_name, angle_value in ideal_angles.items():
+                                print(f"{angle_name}: {angle_value:.1f} degrees")
+                        else:
+                            print("No ideal angles found in database")
+                            print("checking for other closest views")
+                            ideal_angles = await self.get_ideal_angles(pose_class)
+                            if ideal_angles :
+                                for angle_name, angle_value in ideal_angles.items():
+                                    print(f"{angle_name}: {angle_value:.1f} degrees")
+                            else:
+                                print("No ideal angles found for this pose-----------------2")
+                    except YogaPoseIdealAngle.DoesNotExist:
+                        print("No ideal angles found in database-------------------2")
+                            
+                    except Exception as e:
+                        print(f"Error fetching ideal angles: {e}")
 
             else:
                 self.stable_time = 0
@@ -182,61 +293,84 @@ class PoseDetector:
 
 
 
-    def classify_view(stable_coordinates,database_poses=None):
+    def classify_view(self, stable_coordinates):
         """
         Enhanced View Classification with more sub-categories based on keypoints' coordinates.
         """
         try:
-            # Extract coordinates from stable pose data (from print_stable_coordinates output)
-            shoulder_angle = float(stable_coordinates[11][0])  # Left Shoulder X
-            hip_angle = float(stable_coordinates[23][0])  # Left Hip X
-            knee_angle = float(stable_coordinates[25][0])  # Left Knee X
+            if not stable_coordinates:
+                return "No Pose Detected"
 
-            # Depth differences
-            shoulder_depth_diff = abs(float(stable_coordinates[11][2]) - float(stable_coordinates[12][2]))
-            hip_depth_diff = abs(float(stable_coordinates[23][2]) - float(stable_coordinates[24][2]))
-            knee_depth_diff = abs(float(stable_coordinates[25][2]) - float(stable_coordinates[26][2]))
+            # Extract specific keypoints
+            left_shoulder = stable_coordinates[11]
+            right_shoulder = stable_coordinates[12]
+            left_hip = stable_coordinates[23]
+            right_hip = stable_coordinates[24]
+            left_knee = stable_coordinates[25]
+            right_knee = stable_coordinates[26]
+            left_wrist = stable_coordinates[15]
+            right_wrist = stable_coordinates[16]
+            left_elbow = stable_coordinates[13]
+            right_elbow = stable_coordinates[14]
 
-            wrist_depth_diff = abs(float(stable_coordinates[15][2]) - float(stable_coordinates[16][2]))
-            elbow_depth_diff = abs(float(stable_coordinates[13][2]) - float(stable_coordinates[14][2]))
+            # Check if all required keypoints are detected
+            required_keypoints = [left_shoulder, right_shoulder, left_hip, right_hip, left_knee, right_knee]
+            if any(not kp for kp in required_keypoints):
+                return "Partial Pose"
+
             
-            # Height differences
-            shoulder_height_diff = abs(float(stable_coordinates[11][1]) - float(stable_coordinates[12][1]))
-            hip_height_diff = abs(float(stable_coordinates[23][1]) - float(stable_coordinates[24][1]))
-            knee_height_diff = abs(float(stable_coordinates[25][1]) - float(stable_coordinates[26][1]))
+            # Calculate depth differences with more tolerance
+            shoulder_depth_diff = abs(left_shoulder[2] - right_shoulder[2])
+            hip_depth_diff = abs(left_hip[2] - right_hip[2])
+            knee_depth_diff = abs(left_knee[2] - right_knee[2])
+            
+            wrist_depth_diff = abs(left_wrist[2] - right_wrist[2])
+            elbow_depth_diff = abs(left_elbow[2] - right_elbow[2])
 
-            # Distance measures
-            shoulder_hip_dist = abs(float(stable_coordinates[11][0]) - float(stable_coordinates[23][0]))
-            knee_hip_dist = abs(float(stable_coordinates[25][0]) - float(stable_coordinates[23][0]))
-
-            # Pose classification logic based on keypoints
+            # Calculate height and width differences
+            shoulder_height_diff = abs(left_shoulder[1] - right_shoulder[1])
+            hip_height_diff = abs(left_hip[1] - right_hip[1])
+            knee_height_diff = abs(left_knee[1] - right_knee[1])
+            
+            shoulder_hip_dist = abs(left_shoulder[0] - left_hip[0])
+            knee_hip_dist = abs(left_knee[0] - left_hip[0])
+            
+            
             if (shoulder_depth_diff < 0.1 and hip_depth_diff < 0.1) and \
                (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
 
                 if knee_depth_diff < 0.1:
                     return "Front View (Perfect)"
+
                 elif knee_depth_diff < 0.2:
                     return "Front View (Partial)"
+
                 else:
                     return "Front View (Mixed)"
-
             elif (shoulder_depth_diff > 0.5 and hip_depth_diff > 0.5) and \
                  (shoulder_height_diff < 0.2 and hip_height_diff < 0.2):
 
                 if knee_depth_diff > 0.5:
                     return "Back View (Full)"
+
                 elif knee_depth_diff > 0.3:
                     return "Back View (Partial)"
+
                 else:
                     return "Back View (Mixed)"
 
             elif (shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3) and \
                  (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
 
+                # if shoulder_depth_diff > 0.6 and hip_depth_diff > 0.6:
+                #     return "Side View (Perfect - Full Profile)"
+
                 if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
                     return "Side View (Perfect - Near Full)"
+
                 elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
                     return "Side View (Perfect - Partial)"
+
                 else:
                     return "Side View (Intermediate)"
 
@@ -245,8 +379,10 @@ class PoseDetector:
 
                 if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
                     return "Oblique View (Strong)"
+
                 elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
                     return "Oblique View (Moderate)"
+
                 else:
                     return "Oblique View (Mild)"
 
@@ -254,287 +390,218 @@ class PoseDetector:
 
                 if wrist_depth_diff > 0.6 and elbow_depth_diff > 0.6:
                     return "Arm-Specific (Extended Side View)"
+
                 elif wrist_depth_diff > 0.4:
                     return "Arm-Specific (Partial Extension)"
+
                 else:
                     return "Arm-Specific (Mixed)"
-
-            else:
-                if database_poses:
-                    closest_match = find_closest_rare_mixed_view(stable_coordinates, database_poses)
-                    return f"Closest Match Rare/Mixed View: {closest_match}"
-
+            else: 
+                return "Rare or Mixed View"
         except Exception as e:
             print(f"Error in classify_view: {e}")
-            
-    def find_closest_rare_mixed_view(stable_coordinates, database_poses):
-        """
-        Find the closest match for a rare or mixed view from the database.
-        This function compares the current pose with stored database poses.
-        """
-        closest_match = None
-        min_error = float('inf')
-
-        for db_pose in database_poses:
-            error = calculate_pose_error(stable_coordinates, db_pose)
-            if error < min_error:
-                min_error = error
-                closest_match = db_pose["VIEW"] 
-
-        return closest_match
-
-    def calculate_pose_error(stable_coordinates, db_pose):
-        """
-        Calculate the error between the current pose (stable_coordinates) and the stored database pose.
-        For simplicity, let's use the sum of absolute angle differences as a proxy for pose similarity.
-        """
-        error = 0
-        # Assume db_pose contains the ideal joint angles for comparison (e.g., db_pose["left_shoulder_angle"])
-        for joint in stable_coordinates:
-            # Compare angles (e.g., wrist, elbow, shoulder) with the ideal pose in the database
-            error += abs(stable_coordinates[joint] - db_pose[joint])  # Simple error calculation
-
-        return error
-
-    def compare_with_db(pose_name, stable_coordinates, image_url):
-        """
-        Compare the detected pose with ideal angles from the DB and calculate errors.
-        It classifies the pose, retrieves the ideal angles, and calculates errors for original and flipped poses.
-        """
-        # Step 1: Classify the view (Front, Side, etc.)
-        classified_view = classify_view(stable_coordinates)
-
-        # Step 2: Fetch ideal angles for the pose and classified view
-        ideal_angles = YogaPoseIdealAngle.objects.filter(
-            pose_name=pose_name, view=classified_view
-        ).first()
-
-        if not ideal_angles:
-            print(f"Combination not available in DB: {pose_name} - {classified_view}")
-            return JsonResponse({
-                "error": f"Combination not available in DB: {pose_name} - {classified_view}"
-            })
-
-        # Step 3: Prepare the original and flipped angle mappings
-        original_angles = {
-            "Left_Elbow_Angle": ideal_angles.left_elbow_angle_mean,
-            "Right_Elbow_Angle": ideal_angles.right_elbow_angle_mean,
-            "Left_Shoulder_Angle": ideal_angles.left_shoulder_angle_mean,
-            "Right_Shoulder_Angle": ideal_angles.right_shoulder_angle_mean,
-            "Left_Knee_Angle": ideal_angles.left_knee_angle_mean,
-            "Right_Knee_Angle": ideal_angles.right_knee_angle_mean,
-            "Left_Hip_Angle": ideal_angles.left_hip_angle_mean,
-            "Right_Hip_Angle": ideal_angles.right_hip_angle_mean,
-            "Left_Ankle_Angle": ideal_angles.left_ankle_angle_mean,
-            "Right_Ankle_Angle": ideal_angles.right_ankle_angle_mean
-        }
-
-        flipped_angles = {
-            "Left_Elbow_Angle": ideal_angles.right_elbow_angle_mean,
-            "Right_Elbow_Angle": ideal_angles.left_elbow_angle_mean,
-            "Left_Shoulder_Angle": ideal_angles.right_shoulder_angle_mean,
-            "Right_Shoulder_Angle": ideal_angles.left_shoulder_angle_mean,
-            "Left_Knee_Angle": ideal_angles.right_knee_angle_mean,
-            "Right_Knee_Angle": ideal_angles.left_knee_angle_mean,
-            "Left_Hip_Angle": ideal_angles.right_hip_angle_mean,
-            "Right_Hip_Angle": ideal_angles.left_hip_angle_mean,
-            "Left_Ankle_Angle": ideal_angles.right_ankle_angle_mean,
-            "Right_Ankle_Angle": ideal_angles.left_ankle_angle_mean
-        }
-
-        # Step 4: Calculate errors for both original and flipped poses
-        actual_angles = {
-            "Left_Elbow_Angle": stable_coordinates[13],  # Example of extracting angles from pose data
-            "Right_Elbow_Angle": stable_coordinates[14],
-            "Left_Shoulder_Angle": stable_coordinates[11],
-            "Right_Shoulder_Angle": stable_coordinates[12],
-            "Left_Knee_Angle": stable_coordinates[25],
-            "Right_Knee_Angle": stable_coordinates[26],
-            "Left_Hip_Angle": stable_coordinates[23],
-            "Right_Hip_Angle": stable_coordinates[24],
-            "Left_Ankle_Angle": stable_coordinates[27],
-            "Right_Ankle_Angle": stable_coordinates[28]
-        }
-
-        original_errors = calculate_error(actual_angles, original_angles)
-        flipped_errors = calculate_error(actual_angles, flipped_angles)
-
-        # Step 5: Calculate the average error for original and flipped poses
-        avg_error_original = np.mean([e['error'] for e in original_errors.values()])
-        avg_error_flipped = np.mean([e['error'] for e in flipped_errors.values()])
-
-        # Step 6: Choose the best match (either original or flipped) based on the minimum average error
-        best_match = "Flipped Pose" if avg_error_flipped < avg_error_original else "Original Pose"
-        best_errors = flipped_errors if avg_error_flipped < avg_error_original else original_errors
-        avg_error = round(min(avg_error_original, avg_error_flipped), 2)
-
-        # Step 7: Generate corrections based on error thresholds
-        corrections = []
-        for joint, error in best_errors.items():
-            if error['error'] > 5:  # Threshold for corrections (e.g., 5°)
-                direction = "Lift" if error['error'] > 0 else "Lower"
-                correction = f"{direction} your {joint.replace('_', ' ').lower()} by {round(abs(error['error']), 1)}°"
-                corrections.append(correction)
-
-        if not corrections:
-            corrections.append("Pose is nearly perfect!")
-
-        # Step 8: Construct feedback
-        feedback = {
-            "pose_name": pose_name,
-            "classified_view": classified_view,
-            "best_match": best_match,
-            "avg_error": avg_error,
-            "corrections": corrections,
-            "errors": best_errors,
-            "image_url": image_url
-        }
-
-        return feedback
-
-            
-            
-            
-    def get_ideal_angles(self, pose_name: str) -> Dict[str, Dict[str, float]]:
-        """Get ideal angles for a pose from predefined dictionary."""
-        ideal_angles = {
-            
-        }
+            return "Unknown View"
         
-        return ideal_angles.get(pose_name, {})
-    def print_stable_coordinates(self):
-        """Print stable pose X, Y, Z coordinates, angles, and ideal angles."""
-        if self.needs_printing and self.stable_coordinates:
-            print("\n Stable Pose Coordinates and Angles:")
-            print("=" * 60)
+    def calculate_error(self,actual, ideal):
+        error={}
+        for angle in actual:
+            detected_value = actual.get(angle, 0)
+            ideal_value = ideal.get(angle, 0)
+            error_value = abs(detected_value - ideal_value)
 
-            # Print the coordinates
+            error[angle] = {
+                "detected": round(detected_value, 2),
+                "ideal": round(ideal_value, 2),
+                "error": round(error_value, 2)
+            }
+        return error
+    
+    
+        
+    async def get_ideal_angles(self, pose_name: str) -> Dict[str, float]:
+        """Get ideal angles for a pose from the database and calculate errors."""
+        try:
+            if not pose_name:
+                return {}
+
+
+            @sync_to_async
+            def get_angles(pose_name, view, is_flipped):
+                try:
+                    angles = YogaPoseIdealAngle.objects.get(
+                        pose_name=pose_name,
+                        view=view,
+                        is_flipped=is_flipped
+                    )
+                    return {
+                        'Left_Elbow_Angle': angles.left_elbow_angle_mean,
+                        'Right_Elbow_Angle': angles.right_elbow_angle_mean,
+                        'Left_Shoulder_Angle': angles.left_shoulder_angle_mean,
+                        'Right_Shoulder_Angle': angles.right_shoulder_angle_mean,
+                        'Left_Hip_Angle': angles.left_hip_angle_mean,
+                        'Right_Hip_Angle': angles.right_hip_angle_mean,
+                        'Left_Knee_Angle': angles.left_knee_angle_mean,
+                        'Right_Knee_Angle': angles.right_knee_angle_mean,
+                        'Left_Ankle_Angle': angles.left_ankle_angle_mean,
+                        'Right_Ankle_Angle': angles.right_ankle_angle_mean
+                    }
+                except YogaPoseIdealAngle.DoesNotExist:
+                    return None
+
+            @sync_to_async
+            def get_all_views(pose_name):
+                try:
+                    return list(YogaPoseIdealAngle.objects.filter(
+                        pose_name=pose_name,
+                        is_flipped=False
+                    ).values_list('view', flat=True))
+                except Exception as e:
+                    print(f"Error fetching all views: {e}")
+                    return []
+
+            # Get current angles
+            current_angles = self.calculate_pose_angles()
+            
+            if not current_angles:
+                print("No angles calculated for current pose")
+                return {}
+
+            # First try to get angles for the classified view
+            view = self.classify_view(self.stable_coordinates)
+            print(f"\nSearching for ideal angles for view: {view}")
+
+            # Try both flipped and non-flipped versions
+            views_to_check = [(view, False), (view, True)]
+            
+            # Also check for other views in the database
+            all_views = await get_all_views(pose_name)
+            
+            for v in all_views:
+                if v != view:  # Don't duplicate the current view
+                    views_to_check.extend([(v, False), (v, True)])
+
+            min_error = float('inf')
+            best_view = None
+            best_angles = None
+            best_errors = None
+
+            for view_name, is_flipped in views_to_check:
+                try:
+                    # Get angles for this view
+                    ideal_angles = await get_angles(pose_name, view_name, is_flipped)
+                    
+                    if ideal_angles:
+                        # Calculate errors
+                        errors = self.calculate_error(current_angles, ideal_angles)
+                        
+                        # Calculate total error
+                        total_error = sum(error['error'] for error in errors.values())
+                        
+                        # Check if this is the best match
+                        if total_error < min_error:
+                            min_error = total_error
+                            best_view = f"{view_name} (Flipped={is_flipped})"
+                            best_angles = ideal_angles
+                            best_errors = errors
+                        print("------------------------------------------------------------------")
+                        print(f"\nView: {view_name} (Flipped={is_flipped})")
+                        print(f"Total Error: {total_error:.2f}")
+                        print("Angle Errors:")
+                        for angle, error in errors.items():
+                            print(f"{angle}: Detected={error['detected']}°, Ideal={error['ideal']}°, Error={error['error']}°")
+                        print("---------------------------------------------------------")
+                except Exception as e:
+                    print(f"Error processing view {view_name}: {e}")
+                    continue
+                
+            if best_angles:
+                print("====================="*20)
+                print(f"\nBest Matching View: {best_view}")
+                print(f"Total Error: {min_error:.2f}")
+                print("\nBest Angle Errors:")
+                for angle, error in best_errors.items():
+                    print(f"{angle}: Detected={error['detected']}°, Ideal={error['ideal']}°, Error={error['error']}°")
+                print("====================="*20)
+                
+                return best_angles
+            else:
+                print(f"No ideal angles found for pose: {pose_name}")
+                return {}
+
+        except Exception as e:
+            print(f"Error fetching ideal angles: {e}")
+            return {}
+        
+
+
+    async def print_stable_coordinates(self):
+        """Print stable pose X, Y, Z coordinates, angles, and ideal angles."""
+        if self.stable_coordinates:
+            print("\nStable Coordinates:")
             for idx, (x, y, z, confidence) in enumerate(self.stable_coordinates):
                 if idx in self.keypoints:
-                    print(f"{self.keypoints[idx]}:")
-                    print(f"  X: {x}")
-                    print(f"  Y: {y}")
-                    print(f"  Z: {z:.4f}")
-                    print(f"  Confidence: {confidence:.4f}")
-                    print("-" * 40)
+                    print(f"{self.keypoints[idx]}: X={x}, Y={y}, Z={z:.2f}, Confidence={confidence:.2f}")
 
             # Calculate and print angles
             angles = self.calculate_pose_angles()
-            print("\n Calculated Angles:")
-            for angle_name, value in angles.items():
-                print(f"{angle_name}: {value:.2f}°")
+            print("\nCurrent Angles:")
+            for angle_name, angle_value in angles.items():
+                print(f"{angle_name}: {angle_value:.1f} degrees")
 
-            # Classify pose
-            if self.stable_coordinates:
-                input_data = []
-                for coord in self.stable_coordinates:
-                    input_data.extend(coord[:3])
-                
-                while len(input_data) < 71:
-                    input_data.extend([0, 0, 0])
-                
-                input_data = np.array(input_data[:71])
-                input_data = np.expand_dims(input_data, axis=0)
-                
-                print(f"\n Input data shape: {input_data.shape}")
-                print(f"First few coordinates: {input_data[0][:10]}")  
+            # Get and print ideal angles
+            if self.current_pose:
+                print(f"\nIdeal Angles for this pose:")
                 try:
-                    prediction = self.model.predict(input_data)
-                    print(f"\n Raw prediction: {prediction}")
-                    predicted_class_idx = np.argmax(prediction)
-                    predicted_class = self.pose_classes[predicted_class_idx]
-                    confidence = prediction[0][predicted_class_idx]
-                    print(f"Predicted class index: {predicted_class_idx}")
-                    print(f"Predicted class: {predicted_class}")
-                    confidence_threshold = 0.0
-                    print("\n Pose Classification:")
+                    if not self.ideal_angles:
+                        self.ideal_angles = await self.get_ideal_angles(self.current_pose)
                     
-                    if confidence >= confidence_threshold:
-                        if predicted_class != self.current_pose:
-                            try:
-                                self.current_pose = predicted_class
-                                self.ideal_angles = self.get_ideal_angles(predicted_class)
-                                print(f"Predicted Pose: {predicted_class}")
-                                print(f"Confidence: {confidence:.2f}")
-                                
-                                # Print ideal angles if available
-                                if self.ideal_angles:
-                                    print("\n Ideal Angles for this pose:")
-                                    for angle_name, stats in self.ideal_angles.items():
-                                        print(f"{angle_name}:")
-                                        print(f"  Ideal: {stats['mean']:.2f}°")
-                                        print(f"  Range: {stats['min']:.2f}° to {stats['max']:.2f}°")
-                                        print("-" * 40)
-                                else:
-                                    print("No ideal angles defined for this pose.")
-                            except Exception as e:
-                                print(f"Error fetching ideal angles: {str(e)}")
-                                self.ideal_angles = None
-                        else:
-                            # For the same pose, just update the current angles
-                            if self.ideal_angles:
-                                print("\n Current Angles vs Ideal:")
-                                for angle_name in self.ideal_angles:
-                                    if angle_name in angles:
-                                        current = angles[angle_name]
-                                        ideal = self.ideal_angles[angle_name]
-                                        print(f"{angle_name}:")
-                                        print(f"  Current: {current:.2f}°")
-                                        print(f"  Ideal: {ideal['mean']:.2f}°")
-                                        print(f"  Range: {ideal['min']:.2f}° to {ideal['max']:.2f}°")
-                                        print("-" * 40)
-                    else:
-                        print("Predicted Pose: Unknown Pose")
-                        print(f"Confidence: {confidence:.2f}")
+                    for angle_name, ideal_value in self.ideal_angles.items():
+                        if angle_name in angles:
+                            current_angle = angles[angle_name]
+                            print(f"{angle_name}: Current={current_angle:.1f}, Ideal={ideal_value:.1f}")
                 except Exception as e:
-                    print(f"Error in model prediction: {str(e)}")
-                    print(f"Input data shape: {input_data.shape}")
-                    print(f"First few coordinates: {input_data[0][:10]}")
+                    print(f"Error displaying ideal angles: {e}")
 
-            print("=" * 60)
-            self.needs_printing = False
+
+
 
     def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
         """Draw proper stick figure on the frame with ideal angles and guidance."""
-        # Draw connections
+
         for p1, p2 in self.connections:
             if landmarks[p1] and landmarks[p2]:
                 cv2.line(
                     frame,
                     (int(landmarks[p1][0]), int(landmarks[p1][1])),
                     (int(landmarks[p2][0]), int(landmarks[p2][1])),
-                    (0, 255, 0),  # Green color for lines
+                    (0, 255, 0),  
                     3
                 )
 
-        # Draw circles at each keypoint
         for idx, landmark in enumerate(landmarks):
             if landmark:
                 cv2.circle(
                     frame,
                     (int(landmark[0]), int(landmark[1])),
                     7,
-                    (0, 0, 255),  # Red color for joints
+                    (0, 0, 255), 
                     -1
                 )
-                # Add label for each keypoint
                 cv2.putText(
                     frame,
                     self.keypoints.get(idx, ""),
                     (int(landmark[0]) + 10, int(landmark[1]) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.4,
-                    (255, 255, 255),  # White text
+                    (255, 255, 255), 
                     1
                 )
 
-        # If we have ideal angles, display them on the frame
         if self.ideal_angles and self.current_pose:
             try:
                 angles = self.calculate_pose_angles()
-                y_position = 30  # Starting position for text
+                y_position = 30 
                 
-                # Display current pose
                 cv2.putText(
                     frame,
                     f"Current Pose: {self.current_pose}",
@@ -602,6 +669,8 @@ class PoseDetector:
             "Right_Hip_Angle": [12, 24, 26],
             "Left_Knee_Angle": [23, 25, 27],
             "Right_Knee_Angle": [24, 26, 28],
+            "Left_Ankle_Angle": [25, 27, 28],
+            "Right_Ankle_Angle": [26, 28, 27]
         }
 
         angles = {}
@@ -612,8 +681,8 @@ class PoseDetector:
                     a = self.stable_coordinates[points[0]][:2]
                     b = self.stable_coordinates[points[1]][:2]
                     c = self.stable_coordinates[points[2]][:2]
+                    
 
-                    # Calculate angle
                     angle = self.calculate_angle(a, b, c)
                     angles[angle_name] = angle
 

@@ -113,23 +113,6 @@ def calculate_error(actual, ideal):
         }
     return errors
 
-# def upload_image(request, pose_name, view):
-#     """Upload an image and save it temporarily."""
-#     if request.method == "POST" and request.FILES['image']:
-#         image = request.FILES['image']
-
-#         # Save image temporarily
-#         image_path = default_storage.save(f"uploads/{image.name}", image)
-
-#         # Redirect to analyze view with parameters
-#         print("Image uploaded successfully.")
-        
-#         return redirect(
-#             reverse('analyze_pose', kwargs={'pose_name': pose_name, 'view': view}) + f'?image_name={image.name}'
-#         )       
-
-#     return render(request, 'pose_selection/upload_image.html', {'pose_name': pose_name, 'view': view})
-
 def upload_image(request, pose_name):
     """Upload image and redirect to analysis with proper parameters."""
     if request.method == "POST" and request.FILES.get('image'):

@@ -10,26 +10,16 @@ from pose_utils import PoseDetector
 import signal
 import sys
 
-
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Add these imports at the top of your file
 def shutdown_handler(signum, frame):
     logger.info("Shutting down server...")
     sys.exit(0)
 
-# Add this before app creation
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
 
-# Initialize pose detector
-MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
-POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
-pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
-
-# Initialize FastAPI app
 app = FastAPI()
 
 # Add CORS Middleware to handle Django-FastAPI communication
@@ -43,6 +33,11 @@ app.add_middleware(
 
 # Store active WebSocket connections
 active_connections = set()
+
+# Initialize pose detector with correct paths
+MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
+POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
+pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
 
 async def process_frame(websocket: WebSocket):
     """
@@ -71,7 +66,7 @@ async def process_frame(websocket: WebSocket):
                 frame = cv2.resize(frame, (640, 480))
                 
                 # Process frame with pose detector
-                landmarks = detector.process_frame(frame)
+                landmarks = await detector.process_frame(frame)
                 
                 # Draw landmarks
                 if landmarks:
@@ -122,8 +117,7 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info(f"Active connections: {len(active_connections)}")
         
         try:
-            await process_frame(websocket)  # Start processing frames
-
+            await process_frame(websocket) 
         except WebSocketDisconnect:
             logger.info("WebSocket disconnected")
             active_connections.remove(websocket)
@@ -143,8 +137,3 @@ async def server_status():
     Endpoint to check server status.
     """
     return {"status": "running", "active_connections": len(active_connections)}
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8001, reload=True)
