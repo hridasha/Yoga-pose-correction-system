@@ -9,6 +9,7 @@ from typing import List, Dict, Tuple
 from pose_utils import PoseDetector
 import signal
 import sys
+import json
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -39,6 +40,8 @@ MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
 POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
 pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
 
+
+
 async def process_frame(websocket: WebSocket):
     """
     Continuously captures frames from the camera, processes them for pose detection,
@@ -52,6 +55,8 @@ async def process_frame(websocket: WebSocket):
     
     logger.info("Camera opened successfully")
     detector = pose_detector  # Use the initialized pose detector
+    detected_pose = False
+    detected_view = False
 
     try:
         while True:
@@ -75,13 +80,35 @@ async def process_frame(websocket: WebSocket):
                 # Print coordinates if stable
                 detector.print_stable_coordinates()
 
+                # Only calculate angles and get corrections if we have a pose and view
+                if not detected_pose or not detected_view:
+                    if detector.current_pose and detector.current_view:
+                        detected_pose = True
+                        detected_view = True
+                        angles = detector.calculate_pose_angles()
+                        ideal_angles = await detector.get_ideal_angles(detector.current_pose)
+                        if ideal_angles:
+                            errors = detector.calculate_error(angles, ideal_angles)
+                            feedback = detector.generate_feedback(errors)
+                            
+                            # Send angle and correction data
+                            await websocket.send_text(
+                                json.dumps({
+                                    "idealAngles": ideal_angles,
+                                    "corrections": feedback if feedback else "NO FEEDBAXK",
+                                })
+                            )
+
+                # Add small delay before sending image to prevent overwhelming the client
+                await asyncio.sleep(0.01)
+
                 # Encode frame with optimized quality settings
                 _, buffer = cv2.imencode(
                     ".jpg", 
                     frame, 
-                    [int(cv2.IMWRITE_JPEG_QUALITY), 90,  # Higher quality
-                     int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
-                     int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Progressive encoding
+                    [int(cv2.IMWRITE_JPEG_QUALITY), 90,
+                     int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,
+                     int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]
                 )
                 
                 frame_bytes = buffer.tobytes()
@@ -90,7 +117,7 @@ async def process_frame(websocket: WebSocket):
                 await websocket.send_bytes(frame_bytes)
                 
                 # Add small delay to prevent overwhelming the client
-                await asyncio.sleep(0.01)  # Reduced delay for smoother streaming
+                await asyncio.sleep(0.01)
             except Exception as e:
                 logger.error(f"Error in frame processing: {str(e)}")
                 continue
