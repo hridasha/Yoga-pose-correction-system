@@ -24,7 +24,7 @@ django.setup()
 try:
     from pose_selection.models import YogaPoseIdealAngle
 except ImportError as e:
-    print(f"Error importing model: {e}")
+    print(f"Error importing pose_selection models: {e}")
 
 
 _mp_pose = None

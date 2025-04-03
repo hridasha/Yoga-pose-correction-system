@@ -1,8 +1,28 @@
 from typing import List, Tuple
 import numpy as np
 import cv2
+import tensorflow as tf
+import os
+from django.conf import settings
+from django.db import connection
+from django.http import JsonResponse
+import os
+import django
+import sys
+from asgiref.sync import sync_to_async
 
-# Lazy import MediaPipe
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ypc.settings')
+django.setup()
+# from pose_selection.models import YogaPoseIdealAngle
+
+try:
+    from pose_selection.models import YogaPoseIdealAngle
+except ImportError as e:
+    print(f"Error importing pose_selection models: {e}")
+
 _mp_pose = None
 
 def _get_mp_pose():

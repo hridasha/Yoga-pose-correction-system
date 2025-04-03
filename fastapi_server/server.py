@@ -11,11 +11,11 @@ import signal
 import sys
 
 from pose_utils import PoseDetector
+from pose_correction import PoseCorrection
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Handle server shutdown gracefully
 def shutdown_handler(signum, frame):
     logger.info("Shutting down server...")
     sys.exit(0)
@@ -25,23 +25,21 @@ signal.signal(signal.SIGTERM, shutdown_handler)
 
 app = FastAPI()
 
-# CORS Middleware (Django-FastAPI communication)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000"],  # Allow Django origin
+    allow_origins=["http://127.0.0.1:8000"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Store active WebSocket connections
 active_connections = set()
 
-# Initialize pose detector with correct paths
 MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
 POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
-pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
 
+pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
+pose_correction = PoseCorrection()
 
 async def process_frame(websocket: WebSocket):
     """
@@ -61,7 +59,7 @@ async def process_frame(websocket: WebSocket):
 
     try:
         while websocket.client_state == WebSocketState.CONNECTED:
-            # Read frame
+            
             ret, frame = cap.read()
             if not ret:
                 logger.error("Failed to read frame from camera")
@@ -69,17 +67,13 @@ async def process_frame(websocket: WebSocket):
 
             frame = cv2.resize(frame, (640, 480))
 
-            # Process frame with pose detector
             landmarks = await detector.process_frame(frame)
 
-            # Draw landmarks if detected
             if landmarks:
                 frame = detector.draw_pose_landmarks(frame, landmarks)
 
-            # Print stable keypoints
             await detector.print_stable_coordinates()
 
-            # Only calculate corrections when pose and view are detected
             if not detected_pose or not detected_view:
                 if detector.current_pose and detector.current_view:
                     detected_pose = True
@@ -90,13 +84,11 @@ async def process_frame(websocket: WebSocket):
                         errors = detector.calculate_error(angles, ideal_angles)
                         feedback = detector.generate_feedback(errors)
 
-                        # Send correction feedback
                         await websocket.send_text(json.dumps({
                             "idealAngles": ideal_angles,
                             "corrections": feedback if feedback else "NO FEEDBACK",
                         }))
 
-            # Encode frame for transmission
             _, buffer = cv2.imencode(".jpg", frame, 
                                      [int(cv2.IMWRITE_JPEG_QUALITY), 90, 
                                       int(cv2.IMWRITE_JPEG_OPTIMIZE), 1, 
@@ -104,10 +96,7 @@ async def process_frame(websocket: WebSocket):
             
             frame_bytes = buffer.tobytes()
 
-            # Send frame to client
             await websocket.send_bytes(frame_bytes)
-
-            # Add small delay to prevent CPU overload
             await asyncio.sleep(0.01)
 
     except WebSocketDisconnect:
@@ -118,13 +107,58 @@ async def process_frame(websocket: WebSocket):
         cap.release()
         logger.info("Camera released")
 
-        # Remove WebSocket from active connections
         if websocket in active_connections:
             active_connections.remove(websocket)
             logger.info("Removed WebSocket from active connections")
 
-        # Ensure WebSocket is closed
         await websocket.close()
+
+
+
+
+async def process_websocket(websocket):
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        logger.error("Failed to open camera")
+        return
+    
+    logger.info("Camera opened successfully")
+    corrector = pose_correction
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            logger.error("Failed to read frame from camera")
+            break
+
+        frame = cv2.resize(frame, (640, 480))
+        
+        landmarks = corrector.process_correction(frame)
+        
+        if landmarks:
+            frame = corrector.draw_pose_landmarks(frame, landmarks)
+        
+        _, buffer = cv2.imencode(
+            ".jpg", 
+            frame, 
+            [int(cv2.IMWRITE_JPEG_QUALITY), 75,  # Medium quality
+             int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
+             int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Enable progressive encoding
+        )
+        frame_bytes = buffer.tobytes()
+        
+        try:
+            logger.debug(f"Sending frame of size: {len(frame_bytes)} bytes")
+            await websocket.send_bytes(frame_bytes)
+            await asyncio.sleep(0.01) 
+        except WebSocketDisconnect:
+            logger.info("WebSocket disconnected")
+            break
+
+    cap.release()
+    logger.info("Camera released")
+
+
+
 
 
 @app.websocket("/ws/video")
@@ -154,6 +188,24 @@ async def websocket_endpoint(websocket: WebSocket):
 
         await websocket.close()
         logger.info("WebSocket connection closed")
+
+
+@app.websocket("/ws/correction")
+async def correction_endpoint(websocket: WebSocket):
+    logger.info("New WebSocket connection attempt")
+
+    try:
+        await websocket.accept()
+        logger.info("WebSocket connection accepted")
+
+        await process_websocket(websocket)
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}", exc_info=True)
+    finally:
+        await websocket.close()
 
 
 @app.get("/status")
