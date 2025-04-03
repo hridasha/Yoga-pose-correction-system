@@ -103,9 +103,9 @@ class PoseDetector:
         self.detected_view = False
         self.pose_detection_time = 0
         self.view_detection_time = 0
-        self.pose_detection_timeout = 5  # 5 seconds timeout for pose detection
-        self.view_detection_timeout = 5  # 5 seconds timeout for view detection
-        
+        self.pose_detection_timeout = 5 
+        self.view_detection_timeout = 5 
+
         # New variables for feedback system
         self.last_feedback_time = 0
         self.feedback_cooldown = 5  # 5 seconds cooldown
@@ -199,10 +199,8 @@ class PoseDetector:
         """Process frame and return pose landmarks."""
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Run pose detection
         results = self.pose.process(rgb_frame)
 
-        # Extract landmarks
         landmarks = []
         if results.pose_landmarks:
             for i, landmark in enumerate(results.pose_landmarks.landmark):
@@ -214,7 +212,6 @@ class PoseDetector:
         else:
             return []
 
-        # Debug: Print FPS
         print(f"Current FPS: {self.fps:.2f}")
 
         # Skip stability checking during pause period
@@ -247,15 +244,12 @@ class PoseDetector:
                     print("\nPose Stable!")
                     print(f"Stable for {self.stable_time:.2f} seconds")
 
-                    # Store stable coordinates
                     self.stable_coordinates = landmarks
                     self.needs_printing = True
 
-                    # Pause stability checking
                     self.pause_stability = True
                     self.pause_time = time.time()
 
-                    # Print stable coordinates and angles
                     await self.print_stable_coordinates()
 
                     # Only classify pose and view once

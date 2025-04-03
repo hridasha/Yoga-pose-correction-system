@@ -59,7 +59,6 @@ async def process_frame(websocket: WebSocket):
 
     try:
         while websocket.client_state == WebSocketState.CONNECTED:
-            
             ret, frame = cap.read()
             if not ret:
                 logger.error("Failed to read frame from camera")
@@ -96,7 +95,12 @@ async def process_frame(websocket: WebSocket):
             
             frame_bytes = buffer.tobytes()
 
-            await websocket.send_bytes(frame_bytes)
+            try:
+                await websocket.send_bytes(frame_bytes)
+            except Exception as e:
+                logger.error(f"Error sending frame: {str(e)}")
+                break
+
             await asyncio.sleep(0.01)
 
     except WebSocketDisconnect:
@@ -114,9 +118,7 @@ async def process_frame(websocket: WebSocket):
         await websocket.close()
 
 
-
-
-async def process_websocket(websocket):
+async def process_websocket(websocket: WebSocket , pose_name : str):
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         logger.error("Failed to open camera")
@@ -124,6 +126,7 @@ async def process_websocket(websocket):
     
     logger.info("Camera opened successfully")
     corrector = pose_correction
+    detected_view= False
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -132,17 +135,19 @@ async def process_websocket(websocket):
 
         frame = cv2.resize(frame, (640, 480))
         
-        landmarks = corrector.process_correction(frame)
+        landmarks = await corrector.process_correction(frame,pose_name)
         
         if landmarks:
             frame = corrector.draw_pose_landmarks(frame, landmarks)
         
+        await corrector.print_stable_coordinates()
+        
         _, buffer = cv2.imencode(
             ".jpg", 
             frame, 
-            [int(cv2.IMWRITE_JPEG_QUALITY), 75,  # Medium quality
-             int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,   # Enable optimization
-             int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  # Enable progressive encoding
+            [int(cv2.IMWRITE_JPEG_QUALITY), 75, 
+             int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,  
+             int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  
         )
         frame_bytes = buffer.tobytes()
         
@@ -158,54 +163,45 @@ async def process_websocket(websocket):
     logger.info("Camera released")
 
 
-
-
-
-@app.websocket("/ws/video")
-async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for real-time video streaming.
-    """
-    logger.info("New WebSocket connection attempt")
-
+@app.websocket("/ws/correction/{pose_name:path}")
+async def websocket_endpoint(websocket: WebSocket, pose_name: str):
+    await websocket.accept()
+    active_connections.add(websocket)
+    
+    pose_name = pose_name.replace('%20', ' ')  
+    logger.info(f"WebSocket connected for pose: {pose_name}")
+    
     try:
-        await websocket.accept()
-        logger.info("WebSocket connection accepted")
-
-        active_connections.add(websocket)
-        logger.info(f"Active connections: {len(active_connections)}")
-
-        await process_frame(websocket)
-
+        await process_websocket(websocket, pose_name)
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}", exc_info=True)
     finally:
         if websocket in active_connections:
             active_connections.remove(websocket)
-            logger.info("WebSocket removed from active connections")
-
-        await websocket.close()
-        logger.info("WebSocket connection closed")
+            logger.info("Removed WebSocket from active connections")
 
 
-@app.websocket("/ws/correction")
-async def correction_endpoint(websocket: WebSocket):
-    logger.info("New WebSocket connection attempt")
+# @app.websocket("/ws/correction")
+# async def correction_endpoint(websocket: WebSocket):
+#     logger.info("New WebSocket connection attempt")
 
-    try:
-        await websocket.accept()
-        logger.info("WebSocket connection accepted")
+#     try:
+#         await websocket.accept()
+#         logger.info("WebSocket connection accepted")
 
-        await process_websocket(websocket)
+#         query_params = dict(websocket.url.query)
+#         pose_name = query_params.get('pose_name', 'unknown')
+        
+#         logger.info(f"Processing correction for pose: {pose_name}")
+        
+#         await process_frame(websocket, pose_name)
 
-    except WebSocketDisconnect:
-        logger.info("WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}", exc_info=True)
-    finally:
-        await websocket.close()
+#     except WebSocketDisconnect:
+#         logger.info("WebSocket disconnected")
+#     except Exception as e:
+#         logger.error(f"WebSocket error: {str(e)}", exc_info=True)
+#     finally:
+#         await websocket.close()
 
 
 @app.get("/status")
