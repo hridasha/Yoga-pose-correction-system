@@ -259,13 +259,13 @@ def yoga_options(request, pose_name):
     return render(request, 'pose_selection/yoga_options.html', context)
 
 
-def realtime_pose(request, pose_name):
+def live_correction(request, pose_name):
     
     
     context = {
         'pose_name': pose_name
     }
-    return render(request, 'pose_selection/realtime_pose.html', context)
+    return render(request, 'pose_selection/live_correction.html', context)
 
 def yoga_poses(request):
     """Display unique yoga poses."""

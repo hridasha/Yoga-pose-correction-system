@@ -1,0 +1,11 @@
+function startStream() {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        console.log("WebSocket is already open.");
+        return;
+    }
+
+    connectWebSocket();  // Create a new WebSocket connection
+    isStreaming = true;
+    document.getElementById('startButton').style.display = 'none';
+    document.getElementById('stopButton').style.display = 'inline';
+}

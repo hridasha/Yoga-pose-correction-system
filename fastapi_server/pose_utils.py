@@ -265,23 +265,12 @@ class PoseDetector:
                         print(f"Confidence: {confidence:.2f}")
                         self.current_pose = pose_class
                         self.detected_pose = True
-                        self.pose_detection_time = time.time()
 
                     if not self.detected_view:
                         self.current_view = self.classify_view(landmarks)
                         print(f"\nView Classification:")
                         print(f"Current View: {self.current_view}")
                         self.detected_view = True
-                        self.view_detection_time = time.time()
-
-                    # Reset detections if they're too old
-                    current_time = time.time()
-                    if (current_time - self.pose_detection_time > self.pose_detection_timeout or
-                        current_time - self.view_detection_time > self.view_detection_timeout):
-                        self.detected_pose = False
-                        self.detected_view = False
-                        self.current_pose = None
-                        self.current_view = None
 
                     # Get and process ideal angles
                     try:
@@ -322,7 +311,8 @@ class PoseDetector:
 
         self.previous_landmarks = landmarks
         return landmarks
-
+    
+    
 
 
     def get_2d_coords(self, idx):
@@ -437,7 +427,7 @@ class PoseDetector:
 
     async def print_stable_coordinates(self):
         """Print stable pose X, Y, Z coordinates, angles, and ideal angles."""
-        if self.stable_coordinates:
+        if self.stable_coordinates and self.needs_printing:
             print("\nStable Coordinates:")
             for idx, (x, y, z, confidence) in enumerate(self.stable_coordinates):
                 if idx in self.keypoints:
@@ -463,8 +453,8 @@ class PoseDetector:
                 except Exception as e:
                     print(f"Error displaying ideal angles: {e}")
 
-
-
+            # Reset needs_printing flag
+            self.needs_printing = False
 
     async def get_ideal_angles(self, pose_name: str) -> Dict[str, Dict[str, float]]:
         """Get ideal angles for a pose from the database and calculate errors."""
@@ -843,48 +833,59 @@ class PoseDetector:
     def generate_feedback(self, errors):
         """Generate feedback based on angle errors."""
         feedback = []
+        detailed_errors = []
 
         for joint, data in errors.items():
             detected = data["detected"]
             ideal = data["ideal"]
             error = data["error"]
 
+            
             if error > 10:
                 joint_name = joint.lower().replace('_', ' ')
         
                 if "elbow" in joint.lower():
                     if detected < ideal:
-                        feedback.append(f"Extend your {joint_name} fully.")
+                        feedback.append(f"Extend your {joint_name} fully. error with {error}")
                     else:
-                        feedback.append(f"Relax your {joint_name} slightly.")
+                        feedback.append(f"Relax your {joint_name} slightly. error with {error}")
 
                 elif "shoulder" in joint.lower():
                     if detected < ideal:
-                        feedback.append(f"Lift your {joint_name} to align with your arm.")
+                        feedback.append(f"Lift your {joint_name} to align with your arm.error with {error}")
                     else:
-                        feedback.append(f"Drop your {joint_name} slightly to relax.")
+                        feedback.append(f"Drop your {joint_name} slightly to relax.error with {error}")
 
                 elif "hip" in joint.lower():
                     if detected < ideal:
-                        feedback.append(f"Push your {joint_name} upward slightly.")
+                        feedback.append(f"Push your {joint_name} upward slightly.error with {error}")
                     else:
-                        feedback.append(f"Drop your {joint_name} down a little to balance.")
+                        feedback.append(f"Drop your {joint_name} down a little to balance.error with {error}")
 
                 elif "knee" in joint.lower():
                     if detected < ideal:
-                        feedback.append(f"Try straightening your {joint_name}.")
+                        feedback.append(f"Try straightening your {joint_name}.error with    {error}")
                     else:
-                        feedback.append(f"Bend your {joint_name} slightly for balance.")
+                        feedback.append(f"Bend your {joint_name} slightly for balance.errro with {error}")
 
                 elif "ankle" in joint.lower():
                     if detected < ideal:
-                        feedback.append(f"Shift your weight on {joint_name} slightly forward onto your toes.")
+                        feedback.append(f"Shift your weight on {joint_name} slightly forward onto your toes.error with {error}")
                     else:
-                        feedback.append(f"Shift your weight  {joint_name} slightly back onto your heel.")
-        print("---------------------------------FEEDBACK:-------------------------- ", feedback)    
+                        feedback.append(f"Shift your weight  {joint_name} slightly back onto your heel.error with {error}")
+        
+        print("\n---------------------------------FEEDBACK:--------------------------")
+        print("Detailed Angle Errors:")
+        for error in detailed_errors:
+            print(error)
+        print("\nCorrections:")
+        for correction in feedback:
+            print(correction)
+        print("---------------------------------")
+
         if not feedback:
             return []
-    
+
         return feedback
 
     def classify_view(self, stable_coordinates):

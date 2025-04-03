@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!--  Embedded CSS -->
+<style>
+    /*  YogaAI Theme Colors */
+    body {
+        background-color: #E8E2D0;
+        /* Soft Beige */
+        color: #2B3241;
+        /* Deep Navy Gray */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .header {
+        background-color: #2B3241;
+        /* Deep Navy Gray */
+        color: #E8E2D0;
+        /* Soft Beige */
+        padding: 15px;
+    }
+
+    /*  Wider Video Container */
+    .video-container {
+        background-color: black;
+        width: 100%;
+        max-width: 100%;
+        height: 90vh;
+        /* Larger stream */
+        max-height: 800px;
+        /* Keep it wide on large screens */
+        border-radius: 12px;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .status {
+        font-size: 18px;
+        color: #48bb78;
+        /* Green for running */
+    }
+
+    .status.not-running {
+        color: #e53e3e;
+        /* Red for not running */
+    }
+
+    .btn-yoga {
+        background-color: #8B694D;
+        /* Warm Brown */
+        color: white;
+        padding: 12px 24px;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .btn-yoga:hover {
+        background-color: #B0A18B;
+        /* Taupe */
+        color: #2B3241;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .instructions {
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        margin-top: 30px;
+    }
+
+    .footer {
+        font-size: 14px;
+        color: #B0A18B;
+    }
+
+    .footer a {
+        color: #8B694D;
+        text-decoration: none;
+    }
+
+    .footer a:hover {
+        color: #48bb78;
+    }
+
+    /*  Responsive Design */
+    @media (max-width: 768px) {
+        .video-container {
+            height: 80vh;
+            max-height: 600px;
+        }
+    }
+
+    .angles-container,
+    .corrections-container {
+        margin-bottom: 20px;
+    }
+
+    .angles-list,
+    .corrections-list {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 8px;
+    }
+
+    .angle-item,
+    .correction-item {
+        margin: 5px 0;
+        padding: 5px;
+        border-radius: 4px;
+    }
+
+    .angle-item {
+        background-color: rgba(72, 187, 120, 0.2);
+    }
+
+    .correction-item {
+        background-color: rgba(229, 62, 62, 0.2);
+    }
+
+    .no-corrections {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background-color: rgba(72, 187, 120, 0.2);
+        border-radius: 4px;
+    }
+
+    .checkmark {
+        font-size: 1.2em;
+        color: #48bb78;
+    }
+
+    .feedback-text {
+        font-size: 0.9em;
+        color: #E8E2D0;
+    }
+</style>
+
+<div class="container mt-5">
+
+    <div class="video-container">
+        <canvas id="videoCanvas"></canvas>
+    </div>
+
+    <div class="status">Server Status: <span id="serverStatus">Checking...</span></div>
+    <button class="btn-yoga" id="startButton">Start Stream</button>
+    <button class="btn-yoga" id="stopButton" style="display: none;">Stop Stream</button>
+    <div class="title">
+        <h1>Pose To Perform : {{pose_name}}</h1>
+    </div>
+    <div class="instructions">
+        <h3>Instructions</h3>
+        <p>1. Click "Start Stream" to begin the video feed</p>
+        <p>2. Position yourself in front of the camera</p>
+        <p>3. Click "Stop Stream" when you're done</p>
+    </div>
+
+    <div class="instructions">
+        <h3>Current Pose Analysis</h3>
+        <div id="poseAnalysis">
+            <div class="angles-container">
+                <h4>Ideal Angles</h4>
+                <div id="idealAngles" class="angles-list"></div>
+
+            </div>
+            <div class="corrections-container">
+                <h4>Corrections Needed</h4>
+                <div id="corrections" class="corrections-list">
+                    <div id="noCorrections" class="no-corrections" style="display: none;">
+                        <span class="checkmark">✓</span>
+                        <span class="feedback-text">Great job! Your alignment is excellent.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+{% endblock %}
