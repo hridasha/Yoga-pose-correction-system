@@ -119,6 +119,8 @@ async def process_frame(websocket: WebSocket):
 
 
 async def process_websocket(websocket: WebSocket , pose_name : str):
+    frame_count = 0
+    feedback_interval = 150
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         logger.error("Failed to open camera")
@@ -136,6 +138,30 @@ async def process_websocket(websocket: WebSocket , pose_name : str):
         frame = cv2.resize(frame, (640, 480))
         
         landmarks = await corrector.process_correction(frame,pose_name)
+        # if landmarks:
+        #     frame = corrector.draw_pose_landmarks(frame, landmarks)
+        # await corrector.print_stable_coordinates()
+        frame_count +=1
+        if frame_count % feedback_interval == 0:
+            await websocket.send_text(json.dumps({
+                "pose_name": pose_name,
+                "landmarks": landmarks if landmarks is not None else None,
+                "corrections": corrector.generate_feedback(landmarks) if landmarks is not None else None,
+                "detected_pose": corrector.current_pose,
+                "detected_view": corrector.current_view,
+                "idealAngles": corrector.get_ideal_angles(corrector.current_pose) if corrector.current_pose else None,
+                "errors": corrector.calculate_error(corrector.calculate_pose_angles(), corrector.get_ideal_angles(corrector.current_pose)) if corrector.current_pose else None
+            }))
+        # await websocket.send_text(json.dumps({
+        #     "pose_name": pose_name,
+        #     "landmarks": landmarks.tolist() if landmarks is not None else None,
+        #     "corrections": corrector.generate_feedback(landmarks) if landmarks is not None else None,
+        #     "detected_pose": corrector.current_pose,
+        #     "detected_view": corrector.current_view,
+        #     "idealAngles": corrector.get_ideal_angles(corrector.current_pose) if corrector.current_pose else None,
+        #     "errors": corrector.calculate_error(corrector.calculate_pose_angles(), corrector.get_ideal_angles(corrector.current_pose)) if corrector.current_pose else None
+        # }))
+        
         
         
         _, buffer = cv2.imencode(

@@ -191,29 +191,27 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             };
 
+
             websocket.onmessage = (event) => {
                 try {
-                    console.log('Received frame, size:', event.data.byteLength);
+                    if (typeof event.data === "string") {
+                        const data = JSON.parse(event.data);
+                        console.log("[INFO] Received pose correction data:", data);
+                        updatePoseAnalysis(data);
+                        return;
+                    }
 
-                    // Create a Blob from the binary data
                     const array = new Uint8Array(event.data);
                     const blob = new Blob([array], { type: 'image/jpeg' });
-
-                    // Create object URL from blob
                     const url = URL.createObjectURL(blob);
 
-                    let img = new Image();
+                    const img = new Image();
                     img.onload = () => {
-                        console.log('Image loaded successfully, dimensions:', img.width, 'x', img.height);
-
-                        // Clear the canvas first
+                        // Clear canvas
                         ctx.fillStyle = 'black';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                        // Draw the image
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                        // Scale the image to fit the canvas while maintaining aspect ratio
+                        // Maintain aspect ratio
                         const aspectRatio = img.width / img.height;
                         let drawWidth = canvas.width;
                         let drawHeight = canvas.height;
@@ -224,26 +222,24 @@
                             drawWidth = canvas.height * aspectRatio;
                         }
 
-                        // Calculate position to center the image
                         const x = (canvas.width - drawWidth) / 2;
                         const y = (canvas.height - drawHeight) / 2;
 
-                        // Draw the scaled image
+                        // Draw the image
                         ctx.drawImage(img, x, y, drawWidth, drawHeight);
                         URL.revokeObjectURL(url);
                     };
                     img.src = url;
+
                 } catch (error) {
-                    console.error('Error processing frame:', error);
-                    // Show error message on canvas
+                    console.error('Error processing WebSocket message:', error);
                     ctx.fillStyle = 'black';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = 'red';
                     ctx.font = '24px Arial';
-                    ctx.fillText('Error processing frame', 10, 50);
+                    ctx.fillText('Error displaying video or feedback', 10, 50);
                 }
             };
-
             websocket.onclose = () => {
                 console.log('WebSocket connection closed');
                 document.getElementById('serverStatus').textContent = 'Disconnected';

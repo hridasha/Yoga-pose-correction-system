@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,16 +12,20 @@
             background-color: #E8E2D0;
             font-family: 'Roboto', sans-serif;
         }
+
         .navbar {
             background-color: #2B3241;
         }
+
         .btn-signin {
             background-color: #8B694D;
             color: white;
         }
+
         .btn-signin:hover {
             background-color: #B0A18B;
         }
+
         .feature-card {
             border: none;
             border-radius: 15px;
@@ -28,17 +33,21 @@
             transition: 0.3s ease-in-out;
             padding: 20px;
         }
+
         .feature-card:hover {
             transform: translateY(-5px);
         }
+
         .upload-card {
             background: linear-gradient(135deg, #2B3241, #3E475C);
             color: white;
         }
+
         .realtime-card {
             background: linear-gradient(135deg, #8B694D, #B0A18B);
             color: white;
         }
+
         .secondary-card {
             background-color: white;
             border-radius: 12px;
@@ -47,9 +56,11 @@
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
             transition: 0.3s;
         }
+
         .secondary-card:hover {
             transform: scale(1.05);
         }
+
         .icon-container {
             background-color: #E8E2D0;
             width: 50px;
@@ -62,93 +73,209 @@
         }
     </style>
 </head>
+
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark px-4">
-    <a class="navbar-brand fw-bold" href="#">YogaAI</a>
-    <div class="ms-auto">
-        <button class="btn btn-signin rounded-pill px-4">
-            <i class="fas fa-user"></i> Sign In
-        </button>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark px-4">
+        <a class="navbar-brand fw-bold" href="#">YogaAI</a>
+        <div class="ms-auto">
+            <button class="btn btn-signin rounded-pill px-4">
+                <i class="fas fa-user"></i> Sign In
+            </button>
+        </div>
+    </nav>
+
+    <!-- Welcome Section -->
+    <div class="container text-center my-5">
+        <h1 class="fw-bold">Welcome to YogaAI</h1>
+        <p class="text-muted">Choose how you'd like to improve your practice today</p>
     </div>
-</nav>
 
-<!-- Welcome Section -->
-<div class="container text-center my-5">
-    <h1 class="fw-bold">Welcome to YogaAI</h1>
-    <p class="text-muted">Choose how you'd like to improve your practice today</p>
-</div>
-
-<!-- Feature Cards -->
-<div class="container">
-    <div class="row g-4">
-        <!-- Upload & Analyze -->
-        <div class="col-md-6">
-            <div class="feature-card upload-card p-4">
-                <h4 class="fw-bold"><i class="fas fa-upload me-2"></i> Upload & Analyze</h4>
-                <p>Upload your yoga poses and get instant AI-powered feedback.</p>
-                <p class="text-success small">● Ready to analyze</p>
-                <a href="#" class="btn btn-dark">Start Now <i class="fas fa-arrow-right"></i></a>
-            </div>
-        </div>
-
-        <!-- Real-time Session -->
-        <div class="col-md-6">
-            <div class="feature-card realtime-card p-4">
-                <h4 class="fw-bold"><i class="fas fa-video me-2"></i> Real-time Session</h4>
-                <p>Get live pose correction and guidance through your camera.</p>
-                <p class="text-danger small">● Camera inactive</p>
-                <a href="#" class="btn btn-light text-dark">Start Session <i class="fas fa-play"></i></a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Secondary Feature Cards -->
-<div class="container mt-5">
-    <div class="row g-4">
-        <!-- Pose Library -->
-        <div class="col-md-3">
-            <div class="secondary-card">
-                <div class="icon-container">
-                    <i class="fas fa-database"></i>
+    <!-- Feature Cards -->
+    <div class="container">
+        <div class="row g-4">
+            <!-- Upload & Analyze -->
+            <div class="col-md-6">
+                <div class="feature-card upload-card p-4">
+                    <h4 class="fw-bold"><i class="fas fa-upload me-2"></i> Upload & Analyze</h4>
+                    <p>Upload your yoga poses and get instant AI-powered feedback.</p>
+                    <p class="text-success small">● Ready to analyze</p>
+                    <a href="#" class="btn btn-dark">Start Now <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <h6 class="mt-3 fw-bold">Pose Library</h6>
             </div>
-        </div>
 
-        <!-- Tips & Guides -->
-        <div class="col-md-3">
-            <div class="secondary-card">
-                <div class="icon-container">
-                    <i class="fas fa-lightbulb"></i>
+            <!-- Real-time Session -->
+            <div class="col-md-6">
+                <div class="feature-card realtime-card p-4">
+                    <h4 class="fw-bold"><i class="fas fa-video me-2"></i> Real-time Session</h4>
+                    <p>Get live pose correction and guidance through your camera.</p>
+                    <p class="text-danger small">● Camera inactive</p>
+                    <a href="#" class="btn btn-light text-dark">Start Session <i class="fas fa-play"></i></a>
                 </div>
-                <h6 class="mt-3 fw-bold">Tips & Guides</h6>
-            </div>
-        </div>
-
-        <!-- My Progress -->
-        <div class="col-md-3">
-            <div class="secondary-card">
-                <div class="icon-container">
-                    <i class="fas fa-user"></i>
-                </div>
-                <h6 class="mt-3 fw-bold">My Progress</h6>
-            </div>
-        </div>
-
-        <!-- Settings -->
-        <div class="col-md-3">
-            <div class="secondary-card">
-                <div class="icon-container">
-                    <i class="fas fa-cog"></i>
-                </div>
-                <h6 class="mt-3 fw-bold">Settings</h6>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Secondary Feature Cards -->
+    <div class="container mt-5">
+        <div class="row g-4">
+            <!-- Pose Library -->
+            <div class="col-md-3">
+                <div class="secondary-card">
+                    <div class="icon-container">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h6 class="mt-3 fw-bold">Pose Library</h6>
+                </div>
+            </div>
+
+            <!-- Tips & Guides -->
+            <div class="col-md-3">
+                <div class="secondary-card">
+                    <div class="icon-container">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h6 class="mt-3 fw-bold">Tips & Guides</h6>
+                </div>
+            </div>
+
+            <!-- My Progress -->
+            <div class="col-md-3">
+                <div class="secondary-card">
+                    <div class="icon-container">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h6 class="mt-3 fw-bold">My Progress</h6>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="col-md-3">
+                <div class="secondary-card">
+                    <div class="icon-container">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h6 class="mt-3 fw-bold">Settings</h6>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
+
 </html>
+
+
+
+
+
+
+
+
+
+
+<script>
+    websocket.onmessage = (event) => {
+        try {
+            console.log('Received frame, size:', event.data.byteLength);
+
+            // Create a Blob from the binary data
+            const array = new Uint8Array(event.data);
+            const blob = new Blob([array], { type: 'image/jpeg' });
+
+            // Create object URL from blob
+            const url = URL.createObjectURL(blob);
+
+            let img = new Image();
+            img.onload = () => {
+                console.log('Image loaded successfully, dimensions:', img.width, 'x', img.height);
+
+                // Clear the canvas first
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw the image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Scale the image to fit the canvas while maintaining aspect ratio
+                const aspectRatio = img.width / img.height;
+                let drawWidth = canvas.width;
+                let drawHeight = canvas.height;
+
+                if (img.width > img.height) {
+                    drawHeight = canvas.width / aspectRatio;
+                } else {
+                    drawWidth = canvas.height * aspectRatio;
+                }
+
+                // Calculate position to center the image
+                const x = (canvas.width - drawWidth) / 2;
+                const y = (canvas.height - drawHeight) / 2;
+
+                // Draw the scaled image
+                ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        } catch (error) {
+            console.error('Error processing frame:', error);
+            // Show error message on canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'red';
+            ctx.font = '24px Arial';
+            ctx.fillText('Error processing frame', 10, 50);
+        }
+    };
+
+
+    websocket.onmessage = (event) => {
+        try {
+            if (typeof event.data === "string") {
+                const data = JSON.parse(event.data);
+                console.log("[INFO] Received pose correction data:", data);
+                updatePoseAnalysis(data);
+                return;
+            }
+
+            const array = new Uint8Array(event.data);
+            const blob = new Blob([array], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+
+            const img = new Image();
+            img.onload = () => {
+                // Clear canvas
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Maintain aspect ratio
+                const aspectRatio = img.width / img.height;
+                let drawWidth = canvas.width;
+                let drawHeight = canvas.height;
+
+                if (img.width > img.height) {
+                    drawHeight = canvas.width / aspectRatio;
+                } else {
+                    drawWidth = canvas.height * aspectRatio;
+                }
+
+                const x = (canvas.width - drawWidth) / 2;
+                const y = (canvas.height - drawHeight) / 2;
+
+                // Draw the image
+                ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+
+        } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'red';
+            ctx.font = '24px Arial';
+            ctx.fillText('Error displaying video or feedback', 10, 50);
+        }
+    };
+</script>
