@@ -137,10 +137,6 @@ async def process_websocket(websocket: WebSocket , pose_name : str):
         
         landmarks = await corrector.process_correction(frame,pose_name)
         
-        if landmarks:
-            frame = corrector.draw_pose_landmarks(frame, landmarks)
-        
-        await corrector.print_stable_coordinates()
         
         _, buffer = cv2.imencode(
             ".jpg", 
@@ -152,7 +148,7 @@ async def process_websocket(websocket: WebSocket , pose_name : str):
         frame_bytes = buffer.tobytes()
         
         try:
-            logger.debug(f"Sending frame of size: {len(frame_bytes)} bytes")
+            # logger.debug(f"Sending frame of size: {len(frame_bytes)} bytes")
             await websocket.send_bytes(frame_bytes)
             await asyncio.sleep(0.01) 
         except WebSocketDisconnect:

@@ -1,4 +1,6 @@
 from django.db import models
+from authentication.models import CustomUser
+from django.conf import settings
 
 class YogaPoseIdealAngle(models.Model):
     """
@@ -34,7 +36,6 @@ class YogaPoseIdealAngle(models.Model):
     right_ankle_angle_mean = models.FloatField()
     right_ankle_angle_std = models.FloatField()
 
-    # Timestamp fields
     created_at = models.DateTimeField(auto_now_add=True) 
     updated_at = models.DateTimeField(auto_now=True)     
     def __str__(self):
@@ -68,3 +69,32 @@ class YogaPoseHold(models.Model):
 
     def __str__(self):
         return self.pose_name
+
+# class UserHistory(models.Model):
+#     ACTIVITY_TYPES = (
+#         ('UPLOAD', 'Photo Upload'),
+#         ('REALTIME', 'Real-time Practice'),
+#     )
+    
+#     user_mail = models.ForeignKey(
+#         settings.AUTH_USER_MODEL,
+#         on_delete=models.CASCADE,
+#         related_name='user_history'
+#     )
+#     pose_name = models.ForeignKey(
+#         'YogaPoseIdealAngle',
+#         on_delete=models.CASCADE,
+#         related_name='pose_history'
+#     )
+#     activity_type = models.CharField(
+#         max_length=10,
+#         choices=ACTIVITY_TYPES,
+#         default='UPLOAD'
+#     )
+#     last_practice_date = models.DateField()
+#     practice_count = models.PositiveIntegerField(default=0)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return f"{self.user_mail} - {self.pose_name} ({self.activity_type})"

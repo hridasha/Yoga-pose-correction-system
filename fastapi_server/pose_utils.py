@@ -172,9 +172,7 @@ class PoseDetector:
                 if idx < len(landmarks) and landmarks[idx]:
                     input_data.extend(landmarks[idx][:3])
                 else:
-                    input_data.extend([0, 0, 0])  # Add zeros for missing landmarks
-            
-            # Ensure we have exactly 71 features
+                    input_data.extend([0, 0, 0])  
             if len(input_data) > 71:
                 input_data = input_data[:71]
             elif len(input_data) < 71:
@@ -612,30 +610,23 @@ class PoseDetector:
     def calculate_angle(self, a, b, c):
         """Calculate the angle between three points."""
         try:
-            # Convert to numpy arrays
             a = np.array(a)
             b = np.array(b)
             c = np.array(c)
 
-            # Calculate vectors
             ba = a - b
             bc = c - b
-
-            # Calculate dot product and magnitudes
             dot_product = np.dot(ba, bc)
             magnitude_ba = np.linalg.norm(ba)
             magnitude_bc = np.linalg.norm(bc)
 
-            # Calculate cosine of angle
             if magnitude_ba == 0 or magnitude_bc == 0:
                 return 0
 
             cosine_angle = dot_product / (magnitude_ba * magnitude_bc)
             
-            # Clip to valid range to avoid math domain error
             cosine_angle = np.clip(cosine_angle, -1.0, 1.0)
             
-            # Calculate angle in degrees
             angle = np.degrees(np.arccos(cosine_angle))
             return angle
         except Exception as e:
@@ -902,10 +893,9 @@ class PoseDetector:
             left_elbow = stable_coordinates[13]
             right_elbow = stable_coordinates[14]
 
-            # Check if all required keypoints are detected
-            required_keypoints = [left_shoulder, right_shoulder, left_hip, right_hip, left_knee, right_knee]
-            if any(not kp for kp in required_keypoints):
-                return "Partial Pose"
+            # required_keypoints = [left_shoulder, right_shoulder, left_hip, right_hip, left_knee, right_knee, left_wrist, right_wrist, left_elbow, right_elbow]
+            # if any(not kp for kp in required_keypoints):
+            #     return "Partial Pose"
 
             
             # Calculate depth differences with more tolerance

@@ -1,6 +1,5 @@
 from django.contrib import admin
 from .models import YogaPoseIdealAngle, YogaPoseDetails, YogaPoseHold
-
 # Register the model
 @admin.register(YogaPoseIdealAngle)
 class YogaPoseIdealAngleAdmin(admin.ModelAdmin):
@@ -18,3 +17,8 @@ class YogaPoseDetailsAdmin(admin.ModelAdmin):
 class YogaPoseHoldAdmin(admin.ModelAdmin):
     list_display = ('pose_name', 'english_name', 'hold_duration')
     search_fields = ('pose_name', 'english_name')
+    
+# @admin.register(UserHistory)
+# class UserHistoryAdmin(admin.ModelAdmin):
+#     list_display = ('user_mail', 'pose_name', 'last_practice_date', 'practice_count')
+#     search_fields = ('user_mail', 'pose_name')
