@@ -228,12 +228,10 @@
             websocket.onmessage = (event) => {
                 if (isStreaming) {
                     try {
-                        // Check if this is a text message (angle/correction data)
                         if (typeof event.data === 'string') {
                             const data = JSON.parse(event.data);
                             updatePoseAnalysis(data);
                         } else {
-                            // Handle image frame
                             const arrayBuffer = event.data;
                             const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
                             const url = URL.createObjectURL(blob);

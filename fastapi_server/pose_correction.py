@@ -246,9 +246,7 @@ class PoseCorrection:
         Enhanced View Classification with more sub-categories based on keypoints' coordinates.
         """
         try:
-            if not stable_coordinates:
-                return "No Pose Detected"
-
+            
             left_shoulder = stable_coordinates[11]
             right_shoulder = stable_coordinates[12]
             left_hip = stable_coordinates[23]
@@ -670,19 +668,35 @@ class PoseCorrection:
         return frame
 
     def calculate_error(self, actual: Dict[str, float], ideal: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
-        """Calculate the angle errors between actual and ideal angles."""
+        """Calculate the angle errors between actual and ideal angles with tolerance range."""
         errors = {}
         
         for angle in actual:
             if angle in ideal:
                 detected_value = actual[angle]
                 ideal_value = ideal[angle]['mean']
-                error_value = abs(detected_value - ideal_value)
+                min_value = ideal[angle]['min']
+                max_value = ideal[angle]['max']
+                
+                # Calculate error with consideration for min/max range
+                if detected_value < min_value:
+                    error_value = min_value - detected_value
+                elif detected_value > max_value:
+                    error_value = detected_value - max_value
+                else:
+                    error_value = 0
+
+                # Normalize error to a 0-100 scale
+                max_possible_error = max(abs(max_value - ideal_value), abs(min_value - ideal_value))
+                if max_possible_error > 0:
+                    normalized_error = (error_value / max_possible_error) * 100
+                else:
+                    normalized_error = 0
 
                 errors[angle] = {
                     "detected": round(detected_value, 2),
                     "ideal": round(ideal_value, 2),
-                    "error": round(error_value, 2)
+                    "error": round(normalized_error, 2)
                 }
         
         return errors
@@ -949,72 +963,13 @@ class PoseCorrection:
 
 
 
-    # def process_feedback_queue(self, errors):
-    #     """Process errors and provide feedback based on highest errors."""
-    #     if not errors:
-    #         return
-
-    #     for angle_name, error in errors.items():
-    #         if not error['within_range']:
-    #             if angle_name not in self.error_tracking:
-    #                 self.error_tracking[angle_name] = {
-    #                     'error_sum': error['error'],
-    #                     'count': 1,
-    #                     'last_error': error['error'],
-    #                     'detected': error['actual'],
-    #                     'ideal': error['target']
-    #                 }
-    #             else:
-    #                 self.error_tracking[angle_name]['error_sum'] += error['error']
-    #                 self.error_tracking[angle_name]['count'] += 1
-    #                 self.error_tracking[angle_name]['last_error'] = error['error']
-    #                 self.error_tracking[angle_name]['detected'] = error['actual']
-    #                 self.error_tracking[angle_name]['ideal'] = error['target']
-
-    #     # Find top 3 joints with highest average error
-    #     sorted_errors = sorted(
-    #         [(k, v) for k, v in self.error_tracking.items()],
-    #         key=lambda x: x[1]['error_sum'] / x[1]['count'],
-    #         reverse=True
-    #     )
-
-    #     # Prepare simplified error dictionary for generate_feedback()
-    #     top_errors = {}
-    #     for angle_name, stats in sorted_errors[:1]:
-    #         top_errors[angle_name] = {
-    #             "error": stats['last_error'],
-    #             "detected": stats['detected'],
-    #             "ideal": stats['ideal']
-    #         }
-
-    #     # Generate and print descriptive feedback
-    #     feedback = self.generate_feedback(top_errors)
-
-    #     # Also add feedback details to the feedback queue (optional)
-    #     self.feedback_queue.extend([
-    #         {
-    #             'angle': joint,
-    #             'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
-    #             'last_error': self.error_tracking[joint]['last_error']
-    #         } for joint in top_errors
-    #     ])
-
-    #     # # Raw Feedback Summary (if needed)
-    #     print("\nPose Correction Feedback:")
-    #     for item in self.feedback_queue:
-    #         print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
-
-    #     # If all joints are within range, clear feedback
-    #     if all(error['within_range'] for error in errors.values()):
-    #         self.feedback_queue.clear()
-    #         self.error_tracking.clear()
-    #         print("\nPose is correct! No further corrections needed.")
-
     def process_feedback_queue(self, errors):
         """Process errors and provide feedback based on highest errors."""
         if not errors:
             return
 
+        current_time = time.time()
+        
         # Track changes and prevent repeating the same feedback
         new_errors = {}
         for angle_name, error in errors.items():
@@ -1025,7 +980,8 @@ class PoseCorrection:
                         'count': 1,
                         'last_error': error['error'],
                         'detected': error['actual'],
-                        'ideal': error['target']
+                        'ideal': error['target'],
+                        'last_speech_time': 0
                     }
                 else:
                     self.error_tracking[angle_name]['error_sum'] += error['error']
@@ -1054,8 +1010,16 @@ class PoseCorrection:
         # Generate feedback only for the top 3 highest errors
         feedback = self.generate_feedback(top_errors)
         
-        self.text_to_speech(feedback)
-
+        # Only speak feedback if enough time has passed since last speech
+        if not self.last_correction or (current_time - self.last_correction_time > self.feedback_cooldown):
+            # Update the last speech time for all tracked errors
+            for angle_name in self.error_tracking:
+                self.error_tracking[angle_name]['last_speech_time'] = current_time
+            
+            self.text_to_speech(feedback)
+            self.last_correction = feedback
+            self.last_correction_time = current_time
+        
         # Print and send feedback only if new feedback exists
         if top_errors:
             self.feedback_queue = [

@@ -127,11 +127,11 @@
     <div class="instructions">
         <h3>Current Pose Analysis</h3>
         <div id="poseAnalysis">
-            <div class="angles-container">
-                <h4>Ideal Angles</h4>
-                <div id="idealAngles" class="angles-list"></div>
-
+            <div class="Pose-Info">
+                <h4>Current Pose</h4>
+                <div id="poseName" class="pose-name"></div>
             </div>
+
             <div class="corrections-container">
                 <h4>Corrections Needed</h4>
                 <div id="corrections" class="corrections-list">
@@ -154,9 +154,6 @@
     const urlPath = window.location.pathname;
     const poseName = decodeURIComponent(urlPath.split("/")[2]);
 
-    const encodedPose = encodeURIComponent(poseName.trim());
-
-
     function initializeCanvas() {
         const container = document.querySelector('.video-container');
         canvas.width = container.clientWidth;
@@ -170,14 +167,7 @@
 
     async function connectWebSocket() {
         try {
-            const wsUrl = `ws://127.0.0.1:8001/ws/correction/${encodedPose}`;
-
-            websocket = new WebSocket(wsUrl);
-            if (websocket) {
-                websocket.close();
-                websocket = null;
-            }
-
+            const wsUrl = `ws://127.0.0.1:8001/ws/correction/${poseName}`;
             websocket = new WebSocket(wsUrl);
 
             websocket.binaryType = 'arraybuffer';
@@ -186,18 +176,16 @@
                 console.log('WebSocket connection established');
                 document.getElementById('serverStatus').textContent = 'Connected';
                 document.getElementById('serverStatus').classList.remove('not-running');
-                // Clear canvas on successful connection
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             };
 
-
-            websocket.onmessage = (event) => {
+            websocket.onmessage = async (event) => {
                 try {
                     if (typeof event.data === "string") {
                         const data = JSON.parse(event.data);
                         console.log("[INFO] Received pose correction data:", data);
-                        updatePoseAnalysis(data);
+                        updateUI(data);
                         return;
                     }
 
@@ -207,11 +195,9 @@
 
                     const img = new Image();
                     img.onload = () => {
-                        // Clear canvas
                         ctx.fillStyle = 'black';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                        // Maintain aspect ratio
                         const aspectRatio = img.width / img.height;
                         let drawWidth = canvas.width;
                         let drawHeight = canvas.height;
@@ -225,7 +211,6 @@
                         const x = (canvas.width - drawWidth) / 2;
                         const y = (canvas.height - drawHeight) / 2;
 
-                        // Draw the image
                         ctx.drawImage(img, x, y, drawWidth, drawHeight);
                         URL.revokeObjectURL(url);
                     };
@@ -240,13 +225,12 @@
                     ctx.fillText('Error displaying video or feedback', 10, 50);
                 }
             };
+
             websocket.onclose = () => {
                 console.log('WebSocket connection closed');
                 document.getElementById('serverStatus').textContent = 'Disconnected';
                 document.getElementById('serverStatus').classList.add('not-running');
                 websocket = null;
-
-                // Show disconnected message on canvas
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'red';
@@ -259,8 +243,6 @@
                 document.getElementById('serverStatus').textContent = 'Error';
                 document.getElementById('serverStatus').classList.add('not-running');
                 websocket = null;
-
-                // Show error message on canvas
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'red';
@@ -269,7 +251,6 @@
             };
         } catch (error) {
             console.error('Failed to connect to WebSocket:', error);
-            // Show connection error message on canvas
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'red';
@@ -280,11 +261,8 @@
 
     function startStream() {
         if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-            // If no WebSocket or it's not open, try to connect
             connectWebSocket();
-            return;
         }
-
         isStreaming = true;
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('stopButton').style.display = 'inline';
@@ -302,36 +280,35 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    function updatePoseAnalysis(data) {
-        const idealAnglesDiv = document.getElementById('idealAngles');
-        const correctionsDiv = document.getElementById('corrections');
-        const noCorrectionsDiv = document.getElementById('noCorrections');
-        idealAnglesDiv.innerHTML = '';
-        correctionsDiv.innerHTML = '';
-
-        if (data.idealAngles) {
-            Object.entries(data.idealAngles).forEach(([joint, angles]) => {
-                const angleItem = document.createElement('div');
-                angleItem.className = 'angle-item';
-                angleItem.textContent = `${joint}: ${angles.min}° - ${angles.max}°`;
-                idealAnglesDiv.appendChild(angleItem);
-            });
+    function updateUI(data) {
+        // Update pose name
+        if (data.pose_name) {
+            document.getElementById('poseName').textContent = data.pose_name;
         }
 
+        // Update view
+        if (data.detected_view) {
+            document.getElementById('viewName').textContent = data.detected_view;
+        }
+
+        // Clear corrections
+        const correctionsDiv = document.getElementById('corrections');
+        correctionsDiv.innerHTML = '';
+
         // Update corrections
-        if (data.corrections) {
+        if (data.corrections && data.corrections.length > 0) {
             data.corrections.forEach(correction => {
                 const correctionItem = document.createElement('div');
                 correctionItem.className = 'correction-item';
                 correctionItem.textContent = correction;
                 correctionsDiv.appendChild(correctionItem);
             });
-            noCorrectionsDiv.style.display = 'none';
-        }
-        else {
-            noCorrectionsDiv.style.display = 'flex';
+            document.getElementById('noCorrections').style.display = 'none';
+        } else {
+            document.getElementById('noCorrections').style.display = 'flex';
         }
     }
+
     async function checkServerStatus() {
         try {
             const response = await fetch('http://127.0.0.1:8001/status');
@@ -353,6 +330,5 @@
     // Add event listeners immediately
     document.getElementById('startButton').addEventListener('click', startStream);
     document.getElementById('stopButton').addEventListener('click', stopStream);
-
 </script>
 {% endblock %}
