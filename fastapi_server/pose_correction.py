@@ -13,6 +13,7 @@ import sys
 from asgiref.sync import sync_to_async
 import time
 import logging
+import pyttsx3
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -120,6 +121,13 @@ class PoseCorrection:
         self.feedback_queue = []
         self.error_tracking = {}
         self.high_fps = True  
+    def text_to_speech(self, text):
+        """Convert text to speech."""
+        engine = pyttsx3.init()
+        engine.setProperty('rate', 150)  # Adjust speech rate (words per minute)
+        engine.setProperty('volume', 1)  # Set volume level (0.0 to 1.0)
+        engine.say(text)
+        engine.runAndWait()
 
     def print_stable_keypoints(self, landmarks: Dict[int, Tuple[float, float, float, float]]) -> None:
         """Print stable keypoints coordinates when more than 7 keypoints are stable."""
@@ -834,10 +842,8 @@ class PoseCorrection:
                     self.pause_stability = False
                     print("\nResuming stability checking...")
                 else:
-                    # Print current timer
                     print(f"\n[INFO] Time since last feedback: {current_time - self.last_feedback_time:.2f} seconds")
 
-                    # Provide feedback every 5 seconds
                     if current_time - self.last_feedback_time >= self.feedback_interval:
                         self.last_feedback_time = current_time
                         print(f"\n[INFO] Providing feedback at {time.strftime('%X')}...")
@@ -899,7 +905,7 @@ class PoseCorrection:
                         if not self.ideal_angles_selected:
                             ideal_data = await self.get_ideal_angles(pose_name, landmarks_dict)
                             for angle, val in ideal_data.items():
-                                if not all(k in val for k in ("target", "min", "max")):
+                                if not all(k in val for k in ("mean", "min", "max")):
                                     print(f"[ERROR] Incomplete ideal angle data for {angle}: {val}")
                             self.fixed_ideal_angles = ideal_data
                             self.ideal_angles_selected = True
@@ -942,60 +948,75 @@ class PoseCorrection:
             return {}
 
 
+
     # def process_feedback_queue(self, errors):
     #     """Process errors and provide feedback based on highest errors."""
     #     if not errors:
     #         return
-    #     current_time = time.time()
+
     #     for angle_name, error in errors.items():
     #         if not error['within_range']:
     #             if angle_name not in self.error_tracking:
     #                 self.error_tracking[angle_name] = {
     #                     'error_sum': error['error'],
     #                     'count': 1,
-    #                     'last_error': error['error']
+    #                     'last_error': error['error'],
+    #                     'detected': error['actual'],
+    #                     'ideal': error['target']
     #                 }
     #             else:
     #                 self.error_tracking[angle_name]['error_sum'] += error['error']
     #                 self.error_tracking[angle_name]['count'] += 1
     #                 self.error_tracking[angle_name]['last_error'] = error['error']
+    #                 self.error_tracking[angle_name]['detected'] = error['actual']
+    #                 self.error_tracking[angle_name]['ideal'] = error['target']
 
-    #     # Find highest error angles
+    #     # Find top 3 joints with highest average error
     #     sorted_errors = sorted(
     #         [(k, v) for k, v in self.error_tracking.items()],
     #         key=lambda x: x[1]['error_sum'] / x[1]['count'],
     #         reverse=True
     #     )
 
-    #     # Generate feedback for top 3 errors
-    #     feedback = []
-    #     for angle_name, error_stats in sorted_errors[:3]:
-    #         avg_error = error_stats['error_sum'] / error_stats['count']
-    #         feedback.append({
-    #             'angle': angle_name,
-    #             'avg_error': avg_error,
-    #             'last_error': error_stats['last_error']
-    #         })
+    #     # Prepare simplified error dictionary for generate_feedback()
+    #     top_errors = {}
+    #     for angle_name, stats in sorted_errors[:1]:
+    #         top_errors[angle_name] = {
+    #             "error": stats['last_error'],
+    #             "detected": stats['detected'],
+    #             "ideal": stats['ideal']
+    #         }
 
-    #     # Add feedback to queue
-    #     self.feedback_queue.extend(feedback)
+    #     # Generate and print descriptive feedback
+    #     feedback = self.generate_feedback(top_errors)
 
-    #     # Print feedback
+    #     # Also add feedback details to the feedback queue (optional)
+    #     self.feedback_queue.extend([
+    #         {
+    #             'angle': joint,
+    #             'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
+    #             'last_error': self.error_tracking[joint]['last_error']
+    #         } for joint in top_errors
+    #     ])
+
+    #     # # Raw Feedback Summary (if needed)
     #     print("\nPose Correction Feedback:")
-    #     for feedback_item in self.feedback_queue:
-    #         print(f"- {feedback_item['angle']}: Average Error = {feedback_item['avg_error']:.1f}°, Last Error = {feedback_item['last_error']:.1f}°")
+    #     for item in self.feedback_queue:
+    #         print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
 
-    #     # Clear feedback queue if pose is correct
+    #     # If all joints are within range, clear feedback
     #     if all(error['within_range'] for error in errors.values()):
     #         self.feedback_queue.clear()
-    #         print("\nPose is correct! No further corrections needed.")
     #         self.error_tracking.clear()
+    #         print("\nPose is correct! No further corrections needed.")
 
     def process_feedback_queue(self, errors):
         """Process errors and provide feedback based on highest errors."""
         if not errors:
             return
 
+        # Track changes and prevent repeating the same feedback
+        new_errors = {}
         for angle_name, error in errors.items():
             if not error['within_range']:
                 if angle_name not in self.error_tracking:
@@ -1012,46 +1033,49 @@ class PoseCorrection:
                     self.error_tracking[angle_name]['last_error'] = error['error']
                     self.error_tracking[angle_name]['detected'] = error['actual']
                     self.error_tracking[angle_name]['ideal'] = error['target']
+                new_errors[angle_name] = self.error_tracking[angle_name]
 
-        # Find top 3 joints with highest average error
+        # Find top 3 joints with the highest average error
         sorted_errors = sorted(
-            [(k, v) for k, v in self.error_tracking.items()],
+            [(k, v) for k, v in new_errors.items()],
             key=lambda x: x[1]['error_sum'] / x[1]['count'],
             reverse=True
         )
 
         # Prepare simplified error dictionary for generate_feedback()
         top_errors = {}
-        for angle_name, stats in sorted_errors[:3]:
+        for angle_name, stats in sorted_errors[:1]:
             top_errors[angle_name] = {
                 "error": stats['last_error'],
                 "detected": stats['detected'],
                 "ideal": stats['ideal']
             }
 
-        # Generate and print descriptive feedback
+        # Generate feedback only for the top 3 highest errors
         feedback = self.generate_feedback(top_errors)
+        
+        self.text_to_speech(feedback)
 
-        # Also add feedback details to the feedback queue (optional)
-        self.feedback_queue.extend([
-            {
-                'angle': joint,
-                'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
-                'last_error': self.error_tracking[joint]['last_error']
-            } for joint in top_errors
-        ])
+        # Print and send feedback only if new feedback exists
+        if top_errors:
+            self.feedback_queue = [
+                {
+                    'angle': joint,
+                    'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
+                    'last_error': self.error_tracking[joint]['last_error']
+                } for joint in top_errors
+            ]
 
-        # Raw Feedback Summary (if needed)
-        print("\nPose Correction Feedback:")
-        for item in self.feedback_queue:
-            print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
+            # Raw Feedback Summary
+            print("\nPose Correction Feedback:")
+            for item in self.feedback_queue:
+                print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
 
-        # If all joints are within range, clear feedback
+        # If all joints are within range, clear feedback and reset tracking
         if all(error['within_range'] for error in errors.values()):
             self.feedback_queue.clear()
             self.error_tracking.clear()
             print("\nPose is correct! No further corrections needed.")
-
 
 
     def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, float]) -> Dict[str, float]:

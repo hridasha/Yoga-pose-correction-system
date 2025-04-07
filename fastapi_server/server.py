@@ -56,6 +56,7 @@ async def process_frame(websocket: WebSocket):
     detector = pose_detector
     detected_pose = False
     detected_view = False
+    frame_count=0
 
     try:
         while websocket.client_state == WebSocketState.CONNECTED:
@@ -72,21 +73,31 @@ async def process_frame(websocket: WebSocket):
                 frame = detector.draw_pose_landmarks(frame, landmarks)
 
             await detector.print_stable_coordinates()
+            
+            frame_count +=1
+            if frame_count % 150 == 0:
+                await websocket.send_text(json.dumps({
+                    "pose_name": detector.current_pose,
+                    "landmarks": landmarks if landmarks is not None else None,
+                    "detected_pose": detector.current_pose,
+                    "detected_view": detector.current_view,
+                    "idealAngles": await detector.get_ideal_angles(detector.current_pose) if detector.current_pose else None,
+                    "errors": detector.calculate_error(detector.calculate_pose_angles(), detector.get_ideal_angles(detector.current_pose)) if detector.current_pose else None
+                }))
+            # if not detected_pose or not detected_view:
+            #     if detector.current_pose and detector.current_view:
+            #         detected_pose = True
+            #         detected_view = True
+            #         angles = detector.calculate_pose_angles()
+            #         ideal_angles = await detector.get_ideal_angles(detector.current_pose)
+            #         if ideal_angles:
+            #             errors = detector.calculate_error(angles, ideal_angles)
+            #             feedback = detector.generate_feedback(errors)
 
-            if not detected_pose or not detected_view:
-                if detector.current_pose and detector.current_view:
-                    detected_pose = True
-                    detected_view = True
-                    angles = detector.calculate_pose_angles()
-                    ideal_angles = await detector.get_ideal_angles(detector.current_pose)
-                    if ideal_angles:
-                        errors = detector.calculate_error(angles, ideal_angles)
-                        feedback = detector.generate_feedback(errors)
-
-                        await websocket.send_text(json.dumps({
-                            "idealAngles": ideal_angles,
-                            "corrections": feedback if feedback else "NO FEEDBACK",
-                        }))
+            #             await websocket.send_text(json.dumps({
+            #                 "idealAngles": ideal_angles,
+            #                 "corrections": feedback if feedback else "NO FEEDBACK",
+            #             }))
 
             _, buffer = cv2.imencode(".jpg", frame, 
                                      [int(cv2.IMWRITE_JPEG_QUALITY), 90, 
@@ -143,6 +154,15 @@ async def process_websocket(websocket: WebSocket , pose_name : str):
         # await corrector.print_stable_coordinates()
         frame_count +=1
         if frame_count % feedback_interval == 0:
+        #      errors = corrector.calculate_error(corrector.calculate_pose_angles(), corrector.get_ideal_angles(corrector.current_pose))
+
+        #     # Sort errors based on the error value, in descending order
+        #     sorted_errors = sorted(errors.items(), key=lambda x: x[1]['error'], reverse=True)
+
+        #    sorted_feedback = [
+        #         {"angle_name": angle, "error": error_data['error']}
+        #         for angle, error_data in sorted_errors
+        #     ]
             await websocket.send_text(json.dumps({
                 "pose_name": pose_name,
                 "landmarks": landmarks if landmarks is not None else None,
@@ -201,6 +221,24 @@ async def websocket_endpoint(websocket: WebSocket, pose_name: str):
         if websocket in active_connections:
             active_connections.remove(websocket)
             logger.info("Removed WebSocket from active connections")
+
+
+@app.websocket("/ws/video")
+async def video_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    active_connections.add(websocket)
+    logger.info("WebSocket connected for live video stream")
+    try:
+        await process_frame(websocket)
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected")
+    finally:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+            logger.info("Removed WEbsocket from active connections")
+    
+    
+    
 
 
 # @app.websocket("/ws/correction")
