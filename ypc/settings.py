@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     
     
     # local
-    'core',
+    # 'core',
     'authentication',
-    'realtime',
+    # 'realtime',
     'pose_selection',
 ]
 

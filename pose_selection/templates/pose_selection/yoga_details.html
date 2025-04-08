@@ -2,70 +2,249 @@
 {% load static %}
 
 {% block content %}
+<style>
+    /* Custom Styles for Yoga Details Page */
+    .pose-details-section {
+        background: linear-gradient(135deg, var(--dark-bg), var(--secondary-color));
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .pose-image {
+        border-radius: 15px;
+        transition: transform 0.3s ease;
+        overflow: hidden;
+    }
+
+    .pose-image:hover {
+        transform: scale(1.05);
+    }
+
+    .pose-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .pose-level {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .pose-level:hover {
+        transform: translateY(-2px);
+    }
+
+    .pose-level i {
+        margin-right: 0.5rem;
+    }
+
+    .benefits-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .benefits-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .benefits-list li:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        transform: translateX(5px);
+    }
+
+    .action-buttons {
+        margin-top: 2rem;
+    }
+
+    .action-buttons .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .action-buttons .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .action-buttons .btn-realtime {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .action-buttons .btn-upload {
+        background-color: var(--accent-color);
+        color: var(--dark-bg);
+    }
+
+    .hold-range {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .hold-range h5 {
+        margin-bottom: 0.5rem;
+    }
+
+    .hold-range p {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .pose-details-section {
+            padding: 1.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
 
 <!-- Yoga Pose Details Section -->
-<div class="container my-5">
-    <div class="row align-items-center">
-
-        <!-- Left Side: Larger Image -->
-        <div class="col-md-5">
-            <div class="card shadow-sm" style="min-height: 100%; border: none;">
-                <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
-                     class="card-img-top" 
-                     alt="{{ pose.pose_name }}"
-                     style="height: 100%; object-fit: cover; border-radius: 8px;">
+<div class="container">
+    <div class="pose-details-section">
+        <div class="row align-items-center">
+            <!-- Left Side: Larger Image -->
+            <div class="col-md-5 mb-4 mb-md-0">
+                <div class="pose-image">
+                    <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" alt="{{ pose.pose_name }}"
+                        style="height: 100%;">
+                </div>
             </div>
-        </div>
 
-        <!-- Right Side: Pose Details -->
-        <div class="col-md-7">
-            <h2 class="mb-3">{{ pose.pose_name }}</h2>
-            <h4 class="text-muted">{{ pose.english_name }}</h4>
+            <!-- Right Side: Pose Details -->
+            <div class="col-md-7">
+                <h2 class="text-white mb-2">{{ pose.pose_name }}</h2>
+                <h4 class="text-light mb-4">{{ pose.english_name }}</h4>
 
-            <!-- Pose Level with Colors -->
-            <div class="my-3">
-                <span style="
-                    font-weight: bold;
-                    font-size: 20px;  
-                    {% if pose.level == 'Beginner' %} color: #4CAF50;  
-                    {% elif pose.level == 'Intermediate' %} color: #FF9800;  
-                    {% elif pose.level == 'Advanced' %} color: #F44336;  
-                    {% else %} color: #607D8B;  
-                    {% endif %}"
-                    >
+                <!-- Pose Level with Colors -->
+                <div class="pose-level" style="
+                    {% if pose.level == 'Beginner' %} background-color: rgba(76, 175, 80, 0.1); color: #4CAF50;
+                    {% elif pose.level == 'Intermediate' %} background-color: rgba(255, 152, 0, 0.1); color: #FF9800;
+                    {% elif pose.level == 'Advanced' %} background-color: rgba(244, 67, 54, 0.1); color: #F44336;
+                    {% else %} background-color: rgba(96, 125, 139, 0.1); color: #607D8B;
+                    {% endif %}">
+                    <i class="fas fa-star"></i>
                     {{ pose.level }}
-                </span>
-            </div>
+                </div>
 
-            <!-- Benefits -->
-            <div class="mb-4">
-                <h5>Benefits:</h5>
-                <ul>
-                    {% for benefit in pose.benefits %}
-                    <li>{{ benefit }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
+                <!-- Benefits -->
+                <div class="mb-4">
+                    <h5 class="text-white">Benefits:</h5>
+                    <ul class="benefits-list">
+                        {% for benefit in pose.benefits %}
+                        <li class="text-light">{{ benefit }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
 
-            <!-- Hold Range -->
-            <div class="mb-4">
-                <h5>Hold Range:</h5>
-                <p>{{ pose.hold_duration }} seconds</p>
-            </div>
+                <!-- Hold Range -->
+                <div class="hold-range mb-4">
+                    <h5 class="text-white">Hold Range:</h5>
+                    <p>{{ pose.hold_duration }} seconds</p>
+                </div>
 
-            <!-- Action Buttons -->
-            <div class="d-flex">
-                <a href="{% url 'live_correction' pose_name=pose.pose_name %}" class="btn btn-realtime mr-3">
-                    <i class="fas fa-camera"></i> Real-Time Correction
-                </a>
-
-                <a href="{% url 'upload_image' pose_name=pose.pose_name %}" class="btn btn-upload">
-                    <i class="fas fa-upload"></i> Upload an Image
-                </a>
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="{% url 'live_correction' pose_name=pose.pose_name %}" class="btn btn-realtime mr-3">
+                        <i class="fas fa-camera me-2"></i> Real-Time Correction
+                    </a>
+                    <a href="{% url 'upload_image' pose_name=pose.pose_name %}" class="btn btn-upload" >
+                        <i class="fas fa-upload me-2"></i> Upload an Image
+                    </a>
+                </div>
             </div>
         </div>
-
     </div>
 </div>
+
+<!-- Related Poses Section -->
+<div class="container my-5">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Related Poses ({{ pose.level }} Level)</h3>
+            <div class="row">
+                {% for related_pose in related_poses %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
+                             class="card-img-top" 
+                             alt="{{ related_pose.pose_name }}"
+                             style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ related_pose.pose_name }}</h5>
+                            <p class="card-text text-muted">
+                                {{ related_pose.english_name }}
+                            </p>
+                            <a href="{% url 'yoga_details' related_pose.pose_name %}" 
+                               class="btn btn-neutral btn-sm">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tips Section -->
+<div class="container my-5">
+    <div class="card tip-card shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Practice Tips</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-check-circle text-success me-3" style="font-size: 24px;"></i>
+                        <div>
+                            <h5 class="mb-1">Proper Alignment</h5>
+                            <p class="text-muted">Focus on maintaining proper alignment throughout the pose.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-heart text-danger me-3" style="font-size: 24px;"></i>
+                        <div>
+                            <h5 class="mb-1">Breathing Technique</h5>
+                            <p class="text-muted">Inhale deeply as you enter the pose, exhale as you hold.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add smooth scrolling to anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+</script>
 
 {% endblock %}

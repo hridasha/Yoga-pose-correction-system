@@ -1,173 +1,426 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radiant Glow | Yoga Pose Correction</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#FAF4E5] text-[#3B3B3B] font-sans">
+
+  <!-- Hero Section -->
+  <section class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <h1 class="text-4xl font-bold mb-4 text-[#D62828]">🌟 Radiant Glow</h1>
+    <p class="text-lg max-w-xl mb-6 text-[#8D5524]">
+      Welcome to your personal yoga assistant. Experience real-time pose correction with warmth, clarity, and calm guidance.
+    </p>
+    <a href="#get-started" class="bg-[#E76F51] text-white px-6 py-2 rounded-lg text-lg shadow-md hover:bg-[#D62828] transition">
+      Get Started
+    </a>
+  </section>
+
+  <!-- Palette Display -->
+  <section class="px-8 py-12 bg-white">
+    <h2 class="text-xl font-semibold mb-4 text-[#8D5524]">🎨 Warm Color Palette</h2>
+    <div class="flex gap-4 p-4 bg-[#FAF4E5] rounded-lg shadow">
+      <div class="w-24 h-24 rounded" style="background-color:#F6C90E;" title="#F6C90E"></div>
+      <div class="w-24 h-24 rounded" style="background-color:#FFD59E;" title="#FFD59E"></div>
+      <div class="w-24 h-24 rounded" style="background-color:#E76F51;" title="#E76F51"></div>
+      <div class="w-24 h-24 rounded" style="background-color:#D62828;" title="#D62828"></div>
+      <div class="w-24 h-24 rounded border border-gray-300" style="background-color:#FAF4E5;" title="#FAF4E5"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center py-6 text-sm text-[#8D5524] bg-[#FFF1E6]">
+    © 2025 Radiant Glow Yoga — All rights reserved.
+  </footer>
+
+</body>
+</html> -->
+
+
+
+
+
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>YogaAI Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoga Pose Correction System</title>
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
     <style>
+        /* Global Styles */
+        :root {
+            --primary-color: #8B694D;
+            --secondary-color: #2B3241;
+            --accent-color: #9EA2AD;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --dark-bg: #2B3241;
+        }
+
         body {
-            background-color: #E8E2D0;
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-color);
+            background-color: var(--light-bg);
         }
 
+        /* Navbar Styles */
         .navbar {
-            background-color: #2B3241;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a222d 100%);
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+            transition: all 0.3s ease;
         }
 
-        .btn-signin {
-            background-color: #8B694D;
+        .navbar.scrolled {
+            background: rgba(43, 50, 65, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand img {
+            height: 45px;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            transform: translateY(-2px);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border-radius: 25px;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-login,
+        .btn-register {
+            background-color: var(--primary-color);
             color: white;
-        }
-
-        .btn-signin:hover {
-            background-color: #B0A18B;
-        }
-
-        .feature-card {
             border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-left: 1rem;
+        }
+
+        .btn-login:hover,
+        .btn-register:hover {
+            background-color: #6A5038;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-toggler {
+            border: none;
+            padding: 0.5rem;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: rgba(0, 0, 0, 0.9);
+                padding: 1rem;
+                border-radius: 10px;
+                margin-top: 0.5rem;
+            }
+
+            .nav-link {
+                margin: 0.5rem 0;
+            }
+        }
+
+        /* Card Styles */
+        .feature-card {
+            background: white;
             border-radius: 15px;
-            overflow: hidden;
-            transition: 0.3s ease-in-out;
-            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
         }
 
-        .upload-card {
-            background: linear-gradient(135deg, #2B3241, #3E475C);
-            color: white;
-        }
-
-        .realtime-card {
-            background: linear-gradient(135deg, #8B694D, #B0A18B);
-            color: white;
-        }
-
         .secondary-card {
-            background-color: white;
-            border-radius: 12px;
+            background: white;
+            border-radius: 15px;
             padding: 20px;
             text-align: center;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
 
         .secondary-card:hover {
-            transform: scale(1.05);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         }
 
         .icon-container {
-            background-color: #E8E2D0;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
             border-radius: 50%;
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: auto;
+        }
+
+        .icon-container i {
+            color: white;
+            font-size: 24px;
+        }
+
+        /* Button Styles */
+        .btn-login,
+        .btn-register {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover,
+        .btn-register:hover {
+            background-color: #754C3F;
+            transform: translateY(-2px);
+        }
+
+        /* Section Headers */
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: var(--primary-color);
+            margin: 15px auto 0;
+        }
+
+        /* Footer Enhancements */
+        .footer {
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 4rem 0 3rem;
+            margin-top: auto;
+        }
+
+        .footer a {
+            color: var(--accent-color);
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Card Hover Effects */
+        .card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Badge Styles */
+        .badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .feature-card {
+                margin-bottom: 20px;
+            }
+        }
+
+        /* Sticky Footer Layout */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Dropdown Styles */
+        .dropdown-menu-custom {
+            background-color: var(--dark-bg);
+        }
+
+        .dropdown-item-custom {
+            color: var(--accent-color);
+        }
+
+        .dropdown-item-custom:hover {
+            background-color: #8B694D;
+            color: white;
+        }
+
+        .dropdown-item-custom.text-danger:hover {
+            background-color: #a94442;
+            color: white;
         }
     </style>
 </head>
 
 <body>
-
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark px-4">
-        <a class="navbar-brand fw-bold" href="#">YogaAI</a>
-        <div class="ms-auto">
-            <button class="btn btn-signin rounded-pill px-4">
-                <i class="fas fa-user"></i> Sign In
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-yin-yang" style="color: var(--primary-color)"></i>
+                YogaAlign
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
             </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'yoga_poses' %}">
+                                <i class="fas fa-dumbbell me-2"></i>Poses
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'profile' %}">
+                                <i class="fas fa-user me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">
+                                <i class="fas fa-user-plus me-2"></i>Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <!-- Welcome Section -->
-    <div class="container text-center my-5">
-        <h1 class="fw-bold">Welcome to YogaAI</h1>
-        <p class="text-muted">Choose how you'd like to improve your practice today</p>
+    <!-- Page Content -->
+    <div class="container-fluid" style="margin-top: 80px;">
+        {% block content %}{% endblock %}
     </div>
 
-    <!-- Feature Cards -->
-    <div class="container">
-        <div class="row g-4">
-            <!-- Upload & Analyze -->
-            <div class="col-md-6">
-                <div class="feature-card upload-card p-4">
-                    <h4 class="fw-bold"><i class="fas fa-upload me-2"></i> Upload & Analyze</h4>
-                    <p>Upload your yoga poses and get instant AI-powered feedback.</p>
-                    <p class="text-success small">● Ready to analyze</p>
-                    <a href="#" class="btn btn-dark">Start Now <i class="fas fa-arrow-right"></i></a>
-                </div>
-            </div>
-
-            <!-- Real-time Session -->
-            <div class="col-md-6">
-                <div class="feature-card realtime-card p-4">
-                    <h4 class="fw-bold"><i class="fas fa-video me-2"></i> Real-time Session</h4>
-                    <p>Get live pose correction and guidance through your camera.</p>
-                    <p class="text-danger small">● Camera inactive</p>
-                    <a href="#" class="btn btn-light text-dark">Start Session <i class="fas fa-play"></i></a>
-                </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p>&copy; 2025 Yoga Pose Correction System | All Rights Reserved</p>
+            <p>
+                <a href="#">Privacy Policy</a> | 
+                <a href="#">Terms of Service</a>
+            </p>
+            <div class="mt-3">
+                <a href="https://facebook.com" target="_blank" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://twitter.com" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>
+                <a href="https://instagram.com" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
             </div>
         </div>
-    </div>
+    </footer>
 
-    <!-- Secondary Feature Cards -->
-    <div class="container mt-5">
-        <div class="row g-4">
-            <!-- Pose Library -->
-            <div class="col-md-3">
-                <div class="secondary-card">
-                    <div class="icon-container">
-                        <i class="fas fa-database"></i>
-                    </div>
-                    <h6 class="mt-3 fw-bold">Pose Library</h6>
-                </div>
-            </div>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            var navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
 
-            <!-- Tips & Guides -->
-            <div class="col-md-3">
-                <div class="secondary-card">
-                    <div class="icon-container">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <h6 class="mt-3 fw-bold">Tips & Guides</h6>
-                </div>
-            </div>
-
-            <!-- My Progress -->
-            <div class="col-md-3">
-                <div class="secondary-card">
-                    <div class="icon-container">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <h6 class="mt-3 fw-bold">My Progress</h6>
-                </div>
-            </div>
-
-            <!-- Settings -->
-            <div class="col-md-3">
-                <div class="secondary-card">
-                    <div class="icon-container">
-                        <i class="fas fa-cog"></i>
-                    </div>
-                    <h6 class="mt-3 fw-bold">Settings</h6>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        // Navbar toggle icon color change
+        document.querySelector('.navbar-toggler').addEventListener('click', function() {
+            this.querySelector('.navbar-toggler-icon').style.backgroundImage = 
+                this.closest('.navbar').classList.contains('show') ? 
+                "url('data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e')" :
+                "url('data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M15 15l-12-12m0 0l12 12m-12 12l12-12'/%3e%3c/svg%3e')";
+        });
+    </script>
 </body>
-
 </html>
-
-
-
-
-
-

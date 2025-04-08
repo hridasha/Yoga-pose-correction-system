@@ -2,64 +2,284 @@
 {% load static %}
 
 {% block content %}
+<style>
+    .upload-container {
+        max-width: 600px;
+        margin: 1.5rem auto;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
 
-<!-- Upload Image Section -->
-<div class="container my-5">
-    <h2 class="mb-4">Upload an Image for {{ pose_name }}</h2>
+    .drop-zone {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+    }
 
-    <!-- Instructions for accepted image types -->
-    <div class="alert alert-info">
-        <strong>Accepted Image Formats:</strong> JPEG, PNG, GIF (Max size: 5MB)
-    </div>
+    .drop-zone.dragover {
+        border-color: var(--primary-color);
+        background-color: rgba(139, 105, 77, 0.05);
+    }
 
-    <form method="POST" action="{% url 'upload_image' pose_name=pose_name %}" enctype="multipart/form-data" class="mt-4" id="uploadForm">
+    .drop-zone i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    .preview-container {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .preview-container img {
+        max-width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+        border-radius: 4px;
+    }
+
+    .progress-container {
+        margin: 1rem 0;
+        height: 15px;
+    }
+
+    .progress-bar {
+        background-color: var(--primary-color);
+    }
+
+    .btn-neutral {
+        background-color: var(--accent-color);
+        color: var(--dark-bg);
+        border: none;
+        padding: 0.5rem 1rem;
+    }
+
+    .btn-neutral:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .error-message {
+        color: #dc3545;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        display: none;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    h4 {
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+        color: var(--dark-bg);
+    }
+
+    p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .upload-container {
+            margin: 1rem;
+            padding: 1rem;
+        }
+        
+        .drop-zone {
+            padding: 1.5rem 1rem;
+        }
+    }
+</style>
+
+<div class="upload-container">
+    <h2 class="text-center">Upload Image for {{ pose_name }}</h2>
+    
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
-
-        <!-- Image Upload Field -->
-        <div class="mb-4">
-            <label for="image" class="form-label">Select Image:</label>
-            <input type="file" name="image" id="image" class="form-control" required onchange="previewImage(event)">
+        
+        <!-- Drag and Drop Zone -->
+        <div class="drop-zone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <h4>Drop image here</h4>
+            <p>or click to select</p>
+            <input type="file" name="image" id="imageInput" accept="image/*" 
+                   onchange="previewImage(event)" class="d-none">
+            <button type="button" class="btn btn-neutral" onclick="document.getElementById('imageInput').click()">
+                <i class="fas fa-upload me-2"></i>Select Image
+            </button>
         </div>
 
-        <!-- Image Preview -->
-        <div id="imagePreview" class="mb-4" style="display: none;">
+        <!-- Preview Section -->
+        <div id="previewContainer" class="preview-container" style="display: none;">
             <h5>Preview:</h5>
-            <img id="previewImg" src="" alt="Image Preview" class="img-fluid rounded shadow-sm" style="max-width: 100%; height: auto;">
+            <img id="previewImg" src="" alt="Image Preview" class="img-fluid">
         </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message"></div>
 
         <!-- Progress Bar -->
-        <div class="progress mb-4" style="height: 20px; display: none;" id="progressBarContainer">
-            <div id="progressBar" class="progress-bar progress-bar-striped" role="progressbar" 
-                 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-container" id="progressBarContainer" style="display: none;">
+            <div class="progress">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%"></div>
             </div>
         </div>
 
-        <!--  Buttons with Proper Spacing -->
-        <div class="mb-5 d-flex align-items-center">
-            <button type="submit" class="btn btn-primary mt-3">Upload & Analyze</button>
-            <a href="{% url 'yoga_details' pose_name=pose_name %}" class="btn btn-secondary mt-3 ms-4">Back to Views</a>
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center">
+            <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                <i class="fas fa-upload me-2"></i>Upload
+            </button>
+            <a href="{% url 'yoga_details' pose_name=pose_name %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back
+            </a>
         </div>
     </form>
 </div>
 
-<!-- JavaScript for Preview -->
 <script>
+    let isDragging = false;
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        const dropZone = document.querySelector('.drop-zone');
+        dropZone.classList.add('dragover');
+        isDragging = true;
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        const dropZone = document.querySelector('.drop-zone');
+        dropZone.classList.remove('dragover');
+        isDragging = false;
+
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            document.getElementById('imageInput').files = files;
+            previewImage({ target: { files } });
+        }
+    }
+
     function previewImage(event) {
         const file = event.target.files[0];
         const reader = new FileReader();
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImg = document.getElementById('previewImg');
+        const uploadButton = document.getElementById('uploadButton');
+        const errorMessage = document.getElementById('errorMessage');
 
-        reader.onload = function () {
-            const previewContainer = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
+        // Reset error message
+        errorMessage.style.display = 'none';
+        errorMessage.textContent = '';
 
+        if (!file) {
+            previewContainer.style.display = 'none';
+            uploadButton.disabled = true;
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Please upload an image file.';
+            previewContainer.style.display = 'none';
+            uploadButton.disabled = true;
+            return;
+        }
+
+        // Validate file size (2MB limit)
+        if (file.size > 2 * 1024 * 1024) {
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Image size should be less than 2MB.';
+            previewContainer.style.display = 'none';
+            uploadButton.disabled = true;
+            return;
+        }
+
+        reader.onload = function() {
             previewImg.src = reader.result;
             previewContainer.style.display = 'block';
+            uploadButton.disabled = false;
         };
 
-        if (file) {
-            reader.readAsDataURL(file);
-        }
+        reader.readAsDataURL(file);
     }
+
+    // Handle form submission
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const progressBar = document.getElementById('progressBar');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const uploadButton = document.getElementById('uploadButton');
+
+        // Show progress bar
+        progressBarContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        uploadButton.disabled = true;
+
+        // Create FormData
+        const formData = new FormData(form);
+
+        // Create XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+
+        // Progress event
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                progressBar.style.width = percentComplete + '%';
+            }
+        });
+
+        // Success event
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                // The view will handle the redirect to analysis page
+                window.location.href = xhr.responseText;
+            } else {
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Upload failed. Please try again.';
+                progressBarContainer.style.display = 'none';
+                uploadButton.disabled = false;
+            }
+        };
+
+        // Error event
+        xhr.onerror = function() {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Network error occurred. Please try again.';
+            progressBarContainer.style.display = 'none';
+            uploadButton.disabled = false;
+        };
+
+        // Send request
+        xhr.send(formData);
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (isDragging) {
+            handleDragOver({});
+        }
+    });
 </script>
 
 {% endblock %}

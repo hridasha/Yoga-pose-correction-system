@@ -1,16 +1,20 @@
-/*  General Styling */
+/* ----------------------------- */
+/*        General Styling        */
+/* ----------------------------- */
 body {
     font-family: 'Roboto', sans-serif;
-    background: #E8E2D0;  /* Soft Beige */
-    color: #2B3241;       /* Deep Navy Gray */
+    background: #E8E2D0;
+    color: #2B3241;
     margin: 0;
     padding: 0;
     line-height: 1.6;
 }
 
-/*  Navbar Styling */
+/* ----------------------------- */
+/*        Navbar Styling         */
+/* ----------------------------- */
 .navbar {
-    background: #2B3241;  /* Deep Navy Gray */
+    background: #2B3241;
     color: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 15px 0;
@@ -18,16 +22,15 @@ body {
 }
 
 .navbar a {
-    color: #E8E2D0 !important;  /* Soft Beige */
+    color: #E8E2D0 !important;
     font-weight: bold;
     transition: color 0.3s ease;
 }
 
 .navbar a:hover {
-    color: #8B694D !important;  /* Warm Brown */
+    color: #8B694D !important;
 }
 
-/*  Logo and Navbar Alignment */
 .navbar-brand img {
     height: 40px;
     margin-right: 10px;
@@ -48,27 +51,30 @@ body {
     box-shadow: none;
 }
 
-/*  Custom Container for Sections */
+/* ----------------------------- */
+/*        Custom Container       */
+/* ----------------------------- */
 .custom-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
-/*  Footer Styling */
+/* ----------------------------- */
+/*        Footer Styling         */
+/* ----------------------------- */
 .footer {
-    background-color: #2B3241;  /* Deep Navy Gray */
-    color: #E8E2D0;             /* Soft Beige */
+    background-color: #2B3241;
+    color: #E8E2D0;
     padding: 40px 20px;
     text-align: center;
-    position: relative;         
-    bottom: 0;                  
-    width: 100%;                
+    position: relative;
+    bottom: 0;
+    width: 100%;
 }
 
-/* Footer Links */
 .footer a {
-    color: #9EA2AD;             /* Muted Blue-Gray */
+    color: #9EA2AD;
     text-decoration: none;
     font-weight: bold;
     margin: 0 15px;
@@ -76,22 +82,24 @@ body {
 }
 
 .footer a:hover {
-    color: #8B694D;             /* Warm Brown */
+    color: #8B694D;
     text-decoration: underline;
 }
 
 .footer i {
     font-size: 1.5rem;
     margin: 0 15px;
-    color: #9EA2AD;             /* Muted Blue-Gray */
+    color: #9EA2AD;
     transition: color 0.3s ease;
 }
 
 .footer i:hover {
-    color: #8B694D;             /* Warm Brown */
+    color: #8B694D;
 }
 
-/*  Buttons */
+/* ----------------------------- */
+/*        Button Styling         */
+/* ----------------------------- */
 .btn {
     font-weight: bold;
     padding: 12px 30px;
@@ -107,33 +115,35 @@ body {
     transform: translateY(-3px);
 }
 
-/* Primary Buttons */
+/* Primary */
 .btn-realtime {
-    background: #8B694D;      /* Warm Brown */
-    color: #E8E2D0;           /* Soft Beige */
+    background: #8B694D;
+    color: #E8E2D0;
 }
 
 .btn-realtime:hover {
-    background: #B0A18B;      /* Taupe */
+    background: #B0A18B;
     color: white;
 }
 
-/* Secondary Buttons */
+/* Secondary */
 .btn-upload {
-    background: #9EA2AD;      /* Muted Blue-Gray */
-    color: #2B3241;           /* Deep Navy Gray */
+    background: #9EA2AD;
+    color: #2B3241;
     border: 2px solid #2B3241;
 }
 
 .btn-upload:hover {
-    background: #8B694D;      /* Warm Brown */
+    background: #8B694D;
     color: white;
 }
 
-/*  Hero Section */
+/* ----------------------------- */
+/*        Hero Section           */
+/* ----------------------------- */
 .hero-section {
     position: relative;
-    background: linear-gradient(to bottom, #2B3241, #183B4E);  /* Deep Navy Gray to Dark Blue */
+    background: linear-gradient(to bottom, #2B3241, #183B4E);
     color: white;
     text-align: center;
     padding: 100px 20px;
@@ -144,117 +154,53 @@ body {
 .hero-section h1 {
     font-size: 4rem;
     font-weight: bold;
-    color: #E8E2D0;  /* Soft Beige */
+    color: #E8E2D0;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .hero-section p {
     font-size: 1.5rem;
-    color: #9EA2AD;  /* Muted Blue-Gray */
+    color: #9EA2AD;
     margin-bottom: 40px;
 }
 
-/*  Cards */
-.card {
+/* ----------------------------- */
+/*        Card Styling           */
+/* ----------------------------- */
+.card,
+.card-body,
+.card-img-top,
+.card-footer,
+.card-header,
+.activity-card,
+.tip-card,
+.card.shadow-sm,
+.card.shadow-lg,
+.card.rounded-4,
+.card.rounded-pill,
+.card.border-0 {
     border: none !important;
     border-radius: 12px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    background: #F5F5F5 !important;  /* Light Beige */
-    color: #2B3241 !important;       /* Deep Navy Gray */
-    transition: none !important;
-}
-
-.card:hover {
-    transform: none !important;
+    background: #F5F5F5 !important;
+    color: #2B3241 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
     transition: none !important;
-}
-
-/* Override Bootstrap's shadow classes */
-.shadow-sm, .shadow-lg {
-    transition: none !important;
-}
-
-.shadow-sm:hover, .shadow-lg:hover {
     transform: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    transition: none !important;
-}
-
-/* Override Bootstrap's rounded classes */
-.rounded-4, .rounded-pill {
-    transition: none !important;
-}
-
-.rounded-4:hover, .rounded-pill:hover {
-    transform: none !important;
-    transition: none !important;
-}
-
-/* Override Bootstrap's border classes */
-.border-0 {
-    transition: none !important;
-}
-
-.border-0:hover {
-    transform: none !important;
-    transition: none !important;
-}
-
-/* Remove hover effects from all card components */
-.card, .card-body, .card-img-top, .card-footer, .card-header {
-    transform: none !important;
-    transition: none !important;
-}
-
-.card:hover, .card-body:hover, .card-img-top:hover, .card-footer:hover, .card-header:hover {
-    transform: none !important;
-    transition: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Remove hover effects from activity cards */
-.activity-card {
-    transition: none !important;
-}
-
-.activity-card:hover {
-    transform: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Remove hover effects from tip-card */
-.tip-card {
-    transition: none !important;
-}
-
-.tip-card:hover {
-    transform: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Remove hover effects from all card variants */
-.card, .card.shadow-sm, .card.shadow-lg, .card.rounded-4, .card.rounded-pill, .card.border-0 {
-    transition: none !important;
-}
-
-.card:hover, .card.shadow-sm:hover, .card.shadow-lg:hover, .card.rounded-4:hover, .card.rounded-pill:hover, .card.border-0:hover {
-    transform: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    transition: none !important;
 }
 
 .card-title {
-    color: #8B694D !important;       /* Warm Brown */
+    color: #8B694D !important;
     font-weight: bold;
     font-size: 1.4rem;
 }
 
 .card-text {
-    color: #9EA2AD !important;       /* Muted Blue-Gray */
+    color: #9EA2AD !important;
 }
 
-/*  Table Styling */
+/* ----------------------------- */
+/*        Table Styling          */
+/* ----------------------------- */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -263,7 +209,7 @@ body {
 }
 
 .table th {
-    background: #2B3241;     /* Deep Navy Gray */
+    background: #2B3241;
     color: white;
     font-weight: bold;
     padding: 12px;
@@ -271,23 +217,24 @@ body {
 
 .table td {
     padding: 12px;
-    color: #2B3241;          /* Deep Navy Gray */
+    color: #2B3241;
 }
 
 .table tbody tr:hover {
-    background: #B0A18B;      /* Taupe */
+    background: #B0A18B;
     color: white;
     transition: 0.3s;
 }
 
-/*  Alerts */
+/* ----------------------------- */
+/*        Alerts & Lists         */
+/* ----------------------------- */
 .alert {
     border-radius: 8px;
     padding: 15px;
     font-size: 16px;
 }
 
-/*  Corrections List */
 .list-unstyled {
     padding-left: 0;
 }
@@ -300,12 +247,14 @@ body {
 
 .list-unstyled i {
     font-size: 20px;
-    color: #8B694D;  /* Warm Brown */
+    color: #8B694D;
 }
 
-/*  Yoga Pose Image */
+/* ----------------------------- */
+/*      Yoga Pose Image          */
+/* ----------------------------- */
 .pose-image {
-    border: 8px solid #B0A18B; /* Taupe */
+    border: 8px solid #B0A18B;
     padding: 10px;
     max-width: 600px;
     transition: transform 0.3s ease;
@@ -315,7 +264,9 @@ body {
     transform: scale(1.05);
 }
 
-/*  Animations */
+/* ----------------------------- */
+/*        Animations             */
+/* ----------------------------- */
 @keyframes fadeIn {
     0% { opacity: 0; }
     100% { opacity: 1; }
@@ -325,7 +276,22 @@ body {
     animation: fadeIn 1.5s ease-in-out;
 }
 
-/*  Responsive Design */
+/* ----------------------------- */
+/*        Form Controls          */
+/* ----------------------------- */
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #9EA2AD;
+}
+
+.form-control:focus {
+    border-color: #2B3241;
+    box-shadow: 0 0 0 0.25rem rgba(43, 50, 65, 0.25);
+}
+
+/* ----------------------------- */
+/*        Responsive Layouts     */
+/* ----------------------------- */
 @media (max-width: 768px) {
     .container {
         padding: 20px;
@@ -341,48 +307,16 @@ body {
     }
 }
 
-/*  Upload Form */
-.form-control {
-    border-radius: 10px;
-    border: 1px solid #9EA2AD; /* Muted Blue-Gray */
-}
+/* Bootstrap Overrides */
+@media (min-width: 576px) { .container, .container-sm { max-width: 1000px !important; } }
+@media (min-width: 768px) { .container, .container-md { max-width: 1100px !important; } }
+@media (min-width: 992px) { .container, .container-lg { max-width: 1200px !important; } }
+@media (min-width: 1200px) { .container, .container-xl { max-width: 1400px !important; } }
+@media (min-width: 1400px) { .container, .container-xxl { max-width: 1600px !important; } }
 
-.form-control:focus {
-    border-color: #2B3241; /* Deep Navy Gray */
-    box-shadow: 0 0 0 0.25rem rgba(43, 50, 65, 0.25);
-}
-
-/* Override Bootstrap container width on large screens */
-@media (min-width: 1200px) {
-    .container, .container-lg, .container-md, .container-sm, .container-xl {
-        max-width: 1400px; /* Set to a fixed width */
-        margin: 0 auto;     /* Center the container */
-    }
-}
-
-/*  Override all Bootstrap media queries */
-
-@media (min-width: 576px) {
-    .container, .container-sm { max-width: 1000px !important; }
-}
-
-@media (min-width: 768px) {
-    .container, .container-md { max-width: 1100px !important; }
-}
-
-@media (min-width: 992px) {
-    .container, .container-lg { max-width: 1200px !important; }
-}
-
-@media (min-width: 1200px) {
-    .container, .container-xl { max-width: 1400px !important; }
-}
-
-@media (min-width: 1400px) {
-    .container, .container-xxl { max-width: 1600px !important; }
-}
-
-/* Dropdown Menu Custom Styles */
+/* ----------------------------- */
+/*        Dropdown Styling       */
+/* ----------------------------- */
 .dropdown-menu-custom {
     background-color: #2B3241 !important;
     border: none;
@@ -417,8 +351,11 @@ body {
     border-top: 1px solid #4A5568;
 }
 
-/* Login/Register Buttons */
-.btn-login, .btn-register {
+/* ----------------------------- */
+/*     Login/Register Buttons    */
+/* ----------------------------- */
+.btn-login,
+.btn-register {
     background-color: #8B694D !important;
     color: white !important;
     border: none;
@@ -430,17 +367,21 @@ body {
     justify-content: center;
 }
 
-.btn-login:hover, .btn-register:hover {
+.btn-login:hover,
+.btn-register:hover {
     background-color: #754C3F !important;
     transform: translateY(-2px);
 }
 
-.btn-login i, .btn-register i {
+.btn-login i,
+.btn-register i {
     width: 20px;
     text-align: center;
 }
 
-/* User Dropdown Button */
+/* ----------------------------- */
+/*     User Dropdown Button      */
+/* ----------------------------- */
 .btn-link {
     padding: 0.5rem 1rem;
     display: flex;
@@ -453,12 +394,9 @@ body {
     color: #8B694D !important;
 }
 
-/* Logout Button */
+/* ----------------------------- */
+/*         Logout Button         */
+/* ----------------------------- */
 .dropdown-item-custom.text-danger {
     color: #dc3545 !important;
-}
-
-.dropdown-item-custom.text-danger:hover {
-    background-color: #dc3545 !important;
-    color: white !important;
 }
