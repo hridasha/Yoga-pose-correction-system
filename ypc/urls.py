@@ -22,10 +22,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),    
     # path('', include('core.urls')),
     path('auth/', include('authentication.urls')),
+    # path('pose_selection/', include('pose_selection.urls')),
     path('', include('pose_selection.urls')),
-    # path('pose-selection', include('pose_selection.urls')),
     path('realtime', include('realtime.urls')),
     
-]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -105,6 +105,54 @@
             max-height: 600px;
         }
     }
+
+    .angles-container,
+    .corrections-container {
+        margin-bottom: 20px;
+    }
+
+    .angles-list,
+    .corrections-list {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 8px;
+    }
+
+    .angle-item,
+    .correction-item {
+        margin: 5px 0;
+        padding: 5px;
+        border-radius: 4px;
+    }
+
+    .angle-item {
+        background-color: rgba(72, 187, 120, 0.2);
+    }
+
+    .correction-item {
+        background-color: rgba(229, 62, 62, 0.2);
+    }
+
+    .no-corrections {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background-color: rgba(72, 187, 120, 0.2);
+        border-radius: 4px;
+    }
+
+    .checkmark {
+        font-size: 1.2em;
+        color: #48bb78;
+    }
+
+    .feedback-text {
+        font-size: 0.9em;
+        color: #E8E2D0;
+    }
 </style>
 
 <div class="container mt-5">
@@ -124,26 +172,45 @@
         <p>3. Click "Stop Stream" when you're done</p>
     </div>
 
-    <div class="footer">
-        <p>Powered by YogaAI</p>
-        <p><a href="https://github.com/yourusername/yogaai" target="_blank">View on GitHub</a></p>
+    <div class="instructions">
+        <h3>Current Pose Analysis</h3>
+        <div id="poseAnalysis">
+            <div class = "pose-name" >
+                <h4>Pose Name</h4>
+                <div id="poseName" class="pose-name-text">.</div>
+            </div>
+        
+            <div class="angles-container">
+                <h4>Ideal Angles</h4>
+                <div id="idealAngles" class="angles-list"></div>
+
+            </div>
+            <div class="corrections-container">
+                <h4>Corrections Needed</h4>
+                <div id="corrections" class="corrections-list">
+                    <div id="noCorrections" class="no-corrections" style="display: none;">
+                        <span class="checkmark">✓</span>
+                        <span class="feedback-text">Great job! Your alignment is excellent.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
 </div>
 
 <script>
-    let canvas = document.getElementById('videoCanvas');
-    let ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
     let websocket = null;
     let isStreaming = false;
 
     // Initialize canvas size
     function initializeCanvas() {
-        // Set canvas size to fill the container
         const container = document.querySelector('.video-container');
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
-        
-        // Update canvas size when window is resized
+
         window.addEventListener('resize', () => {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
@@ -153,137 +220,88 @@
     async function connectWebSocket() {
         try {
             websocket = new WebSocket('ws://127.0.0.1:8001/ws/video');
-            
+
             websocket.onopen = () => {
                 console.log('WebSocket connected');
                 document.getElementById('serverStatus').textContent = 'Connected';
                 document.getElementById('serverStatus').classList.remove('not-running');
-                // Clear canvas on successful connection
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                isStreaming = true;
             };
 
             websocket.onmessage = (event) => {
                 if (isStreaming) {
                     try {
-                        console.log('Received frame, size:', event.data.byteLength);
-                        
-                        // Create a Blob from the binary data
-                        const blob = new Blob([event.data], { type: 'image/jpeg' });
-                        
-                        // Create object URL from blob
-                        const url = URL.createObjectURL(blob);
-                        
-                        let img = new Image();
-                        img.onload = () => {
-                            console.log('Image loaded successfully, dimensions:', img.width, 'x', img.height);
-                            
-                            // Clear the canvas first
-                            ctx.fillStyle = 'black';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            
-                            // Draw the image
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            
-                            // Scale the image to fit the canvas while maintaining aspect ratio
-                            const aspectRatio = img.width / img.height;
-                            let drawWidth = canvas.width;
-                            let drawHeight = canvas.height;
-                            
-                            if (img.width > canvas.width) {
-                                drawHeight = canvas.width / aspectRatio;
-                            }
-                            if (img.height > canvas.height) {
-                                drawWidth = canvas.height * aspectRatio;
-                            }
-                            
-                            // Center the image on the canvas
-                            const x = (canvas.width - drawWidth) / 2;
-                            const y = (canvas.height - drawHeight) / 2;
-                            
-                            // Draw the scaled image
-                            ctx.drawImage(img, x, y, drawWidth, drawHeight);
-                            
-                            // Draw keypoints
-                            ctx.strokeStyle = 'yellow';
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            ctx.arc(x + 100, y + 100, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            ctx.beginPath();
-                            ctx.arc(x + 200, y + 200, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            ctx.beginPath();
-                            ctx.arc(x + 300, y + 300, 5, 0, 2 * Math.PI);
-                            ctx.stroke();
-                            
-                            console.log('Frame drawn to canvas');
-                            
-                            // Clean up
-                            URL.revokeObjectURL(url);
-                        };
-                        
-                        img.onerror = () => {
-                            console.error('Error loading image');
-                            // Show error message on canvas
-                            ctx.fillStyle = 'red';
-                            ctx.font = '24px Arial';
-                            ctx.fillText('Error loading frame', 10, 50);
-                        };
-                        
-                        img.src = url;
+                        if (typeof event.data === 'string') {
+                            const data = JSON.parse(event.data);
+                            updatePoseAnalysis(data);
+                        } else {
+                            const arrayBuffer = event.data;
+                            const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+                            const url = URL.createObjectURL(blob);
+
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.fillStyle = 'black';
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                                const aspectRatio = img.width / img.height;
+                                let drawWidth = canvas.width;
+                                let drawHeight = canvas.height;
+
+                                if (img.width > canvas.width) {
+                                    drawHeight = canvas.width / aspectRatio;
+                                }
+                                if (img.height > canvas.height) {
+                                    drawWidth = canvas.height * aspectRatio;
+                                }
+
+                                const x = (canvas.width - drawWidth) / 2;
+                                const y = (canvas.height - drawHeight) / 2;
+
+                                ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                                URL.revokeObjectURL(url);
+                            };
+                            img.src = url;
+                        }
                     } catch (error) {
                         console.error('Error processing frame:', error);
-                        // Show error message on canvas
-                        ctx.fillStyle = 'red';
-                        ctx.font = '24px Arial';
-                        ctx.fillText('Error processing frame', 10, 50);
                     }
                 }
             };
 
             websocket.onclose = () => {
                 console.log('WebSocket disconnected');
+                isStreaming = false;
                 document.getElementById('serverStatus').textContent = 'Disconnected';
                 document.getElementById('serverStatus').classList.add('not-running');
-                websocket = null;
-                // Show disconnected message on canvas
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.font = '24px Arial';
-                ctx.fillText('Disconnected from server', 10, 50);
             };
 
             websocket.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                // Show error message on canvas
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.font = '24px Arial';
-                ctx.fillText('WebSocket connection error', 10, 50);
+                isStreaming = false;
+                document.getElementById('serverStatus').textContent = 'Error';
+                document.getElementById('serverStatus').classList.add('not-running');
             };
+
         } catch (error) {
-            console.error('Failed to connect to WebSocket:', error);
-            // Show connection error message on canvas
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'red';
-            ctx.font = '24px Arial';
-            ctx.fillText('Failed to connect to server', 10, 50);
+            console.error('Error connecting to WebSocket:', error);
         }
     }
 
     function startStream() {
-        if (!websocket) {
-            connectWebSocket();
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            console.log("WebSocket is already open.");
+            return;
         }
+    
+        connectWebSocket();  // Create a new WebSocket connection
         isStreaming = true;
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('stopButton').style.display = 'inline';
     }
-
+    
     function stopStream() {
         isStreaming = false;
         if (websocket) {
@@ -307,15 +325,47 @@
         }
     }
 
+    function updatePoseAnalysis(data) {
+        const idealAnglesDiv = document.getElementById('idealAngles');
+        const correctionsDiv = document.getElementById('corrections');
+        const noCorrectionsDiv = document.getElementById('noCorrections');
+        idealAnglesDiv.innerHTML = '';
+        correctionsDiv.innerHTML = '';
+
+        if (data.idealAngles) {
+            Object.entries(data.idealAngles).forEach(([joint, angles]) => {
+                const angleItem = document.createElement('div');
+                angleItem.className = 'angle-item';
+                angleItem.textContent = `${joint}: ${angles.min}° - ${angles.max}°`;
+                idealAnglesDiv.appendChild(angleItem);
+            });
+        }
+
+        // Update corrections
+        if (data.corrections) {
+            data.corrections.forEach(correction => {
+                const correctionItem = document.createElement('div');
+                correctionItem.className = 'correction-item';
+                correctionItem.textContent = correction;
+                correctionsDiv.appendChild(correctionItem);
+            });
+            noCorrectionsDiv.style.display = 'none';
+        }
+        else{
+            noCorrectionsDiv.style.display = 'flex';
+        }
+    }
+
     // Initialize canvas when page loads
     window.onload = () => {
         initializeCanvas();
         checkServerStatus();
-        setInterval(checkServerStatus, 5000); // Check every 5 seconds
+        setInterval(checkServerStatus, 5000);
     };
 
     // Add event listeners
     document.getElementById('startButton').addEventListener('click', startStream);
     document.getElementById('stopButton').addEventListener('click', stopStream);
 </script>
+
 {% endblock %}

@@ -3,62 +3,234 @@
 
 {% block content %}
 <style>
-    .pose-card {
-        transition: all 0.3s ease-in-out;
+    .pose-container {
+        background-color: #E8E2D0;
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        max-width: 1300px;
+        margin: 0 auto;
     }
 
-    .pose-card:hover {
+    .search-container {
+        margin-bottom: 2.5rem;
+        position: relative;
+    }
+
+    .search-input {
+        padding: 1rem 1.5rem;
+        border: 2px solid #9EA2AD;
+        border-radius: 25px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .search-input:focus {
+        border-color: #2B3241;
+        box-shadow: 0 0 0 3px rgba(43, 50, 65, 0.1);
+        outline: none;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #2B3241;
+        font-size: 1.2rem;
+    }
+
+    .pose-card {
+        transition: all 0.3s ease;
+        height: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        height: 100%;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-img-top {
+        height: 220px;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .pose-card:hover .card-img-top {
         transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body {
+        padding: 1.75rem;
+    }
+
+    .card-title {
+        color: #2B3241;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 1.25rem;
+    }
+
+    .english-name {
+        color: #8B694D;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+    }
+
+    .benefits-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .benefits-list li {
+        margin-bottom: 1rem;
+        color: #6c757d;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .benefits-list li i {
+        color: #4CAF50;
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+    }
+
+    .level-badge {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        z-index: 1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .level-beginner {
+        background-color: #8B694D;
+        color: white;
+    }
+
+    .level-intermediate {
+        background-color: #2B3241;
+        color: white;
+    }
+
+    .level-advanced {
+        background-color: #9EA2AD;
+        color: #2B3241;
+    }
+
+    .select-btn {
+        background-color: #2B3241;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .select-btn:hover {
+        background-color: #1a222d;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .no-results {
+        display: none;
+        color: #FF9800;
+        font-size: 1.1rem;
+        margin-top: 2rem;
+        text-align: center;
     }
 
     .hidden {
         display: none !important;
     }
+
+    @media (max-width: 991.98px) {
+        .pose-container {
+            padding: 3rem 1rem;
+        }
+
+        .search-input {
+            max-width: 100%;
+        }
+    }
 </style>
 
-<div class="container">
-    <h1 class="my-5 text-center">Yoga Pose Selection</h1>
+<div class="container-fluid py-5">
+    <div class="pose-container">
+        <h1 class="text-center mb-4" style="color: #2B3241;">Yoga Pose Selection</h1>
+        <p class="text-center text-muted mb-5">Explore our collection of yoga poses and find the perfect one for your
+            practice</p>
 
-    <div class="row justify-content-center mb-4">
-        <div class="col-md-6">
-            <input type="text" id="searchInput" class="form-control" placeholder="Search for a Yoga Pose..."
-                onkeyup="filterPoses()">
-        </div>
-    </div>
-
-    <p id="noResults" class="text-center text-danger mt-3 hidden">No matching poses found.</p>
-
-    <div class="row g-4" id="poseContainer">
-        {% for pose in poses %}
-        <div class="col-md-4 pose-card p-3" data-name="{{ pose.pose_name|lower }} {{ pose.english_name|lower }}">
-            <div class="card shadow-sm h-100">
-                <div class="position-relative">
-                    <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" class="card-img-top"
-                        alt="Yoga Pose">
-                    <span class="badge position-absolute" style="top: 10px; left: 10px; padding: 8px 12px; font-size: 14px;
-                        {% if pose.level == 'Beginner' %} background-color: #8B694D; color: white; 
-                        {% elif pose.level == 'Intermediate' %} background-color: #2B3241; color: white; 
-                        {% elif pose.level == 'Advanced' %} background-color: #9EA2AD; color: #2B3241; 
-                        {% else %} background-color: #E8E2D0; color: #2B3241; {% endif %}">
-                        {{ pose.level }}
-                    </span>
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ pose.pose_name }}</h5>
-                    <h6 class="text-muted">{{ pose.english_name }}</h6>
-                    <ul class="list-unstyled">
-                        {% for benefit in pose.benefits %}
-                        <li>{{ benefit }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'yoga_details' pose_name=pose.pose_name  %}" class="btn btn">Select Pose</a>
-                </div>
+        <div class="search-container text-center">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a Yoga Pose..."
+                    onkeyup="filterPoses()">
             </div>
         </div>
-        {% endfor %}
+
+        <p id="noResults" class="no-results">No matching poses found. Try a different search term.</p>
+
+        <div class="row g-5" id="poseContainer">
+            {% for pose in poses %}
+            <div class="col-md-3 col-lg-3 pose-card">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        {% if pose.image %}
+                        <img src="{{ pose.image.url }}" class="card-img-top" alt="{{ pose.pose_name }} image">
+                        {% else %}
+                        <img src="{% static 'pose_selection/images/default_pose.jpg' %}" class="card-img-top"
+                            alt="Default Pose Image">
+                        {% endif %}
+                        {% if pose.level == "Beginner" %}
+                        <span class="level-badge level-{{ pose.level|lower }}">
+                            {{ pose.level }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pose.pose_name }}</h5>
+                        <h6 class="english-name">{{ pose.english_name }}</h6>
+                        <ul class="benefits-list">
+                            {% for benefit in pose.benefits %}
+                            <li><i class="fas fa-check"></i>{{ benefit }}</li>
+                            {% empty %}
+                            <li>No benefits listed.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <a href="{% url 'yoga_details' pose_name=pose.pose_name %}" class="btn select-btn">
+                            <i class="fas fa-arrow-right"></i>Select Pose
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
@@ -70,13 +242,15 @@
         let found = false;
 
         poseCards.forEach(card => {
-            let poseName = card.getAttribute("data-name");
+            let poseName = card.querySelector(".card-title").textContent.toLowerCase();
+            let englishName = card.querySelector(".english-name").textContent.toLowerCase();
+            let fullName = poseName + ' ' + englishName;
 
-            if (poseName.includes(input)) {
-                card.classList.remove("hidden"); 
+            if (fullName.includes(input)) {
+                card.classList.remove("hidden");
                 found = true;
             } else {
-                card.classList.add("hidden"); 
+                card.classList.add("hidden");
             }
         });
 

@@ -1,131 +1,438 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block extra_css %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 {% endblock %}
+
 {% block content %}
+<style>
+    .profile-container {
+        background-color: #E8E2D0;
+        padding: 3rem 0;
+    }
 
-<div class="container my-5">
+    .profile-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .profile-header {
+        background-color: #2B3241;
+        color: white;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+    }
+
+    .profile-header h3 {
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 2rem;
+        position: relative;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #2B3241;
+        transition: all 0.3s ease;
+    }
+
+    .profile-avatar:hover img {
+        transform: scale(1.05);
+    }
+
+    .profile-info {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .profile-name {
+        color: #2B3241;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-email {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6c757d;
+    }
+
+    .stat-item i {
+        font-size: 1.2rem;
+    }
+
+    .profile-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .profile-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Profile Photo Modal */
+    .profile-photo-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+    }
+
+    .photo-modal-content {
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 12px;
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        margin: 50px auto;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .photo-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .photo-modal-header h3 {
+        color: #8B694D;
+        margin: 0;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        color: #E8E2D0;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+    }
+
+    .photo-item {
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+        border-radius: 8px;
+        background-color: rgba(232, 226, 208, 0.1);
+    }
+
+    .photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .photo-item:hover img {
+        transform: scale(1.05);
+    }
+
+    .photo-item.selected {
+        border: 2px solid #8B694D;
+    }
+
+    .photo-item.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #8B694D;
+        font-size: 20px;
+        background: rgba(232, 226, 208, 0.9);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .save-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        margin-top: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    < !-- Reference Image Overlay -->.reference-overlay {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        background-color: rgba(43, 50, 65, 0.9);
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .reference-overlay h4 {
+        color: #8B694D;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .reference-overlay .camera-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: transform 0.3s ease;
+    }
+
+    .reference-overlay .camera-button:hover {
+        transform: scale(1.1);
+    }
+
+
+    .save-button:hover {
+        background-color: #725239;
+    }
+
+    .btn-primary {
+        background-color: #2B3241;
+        border: none;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #1a222d;
+    }
+
+    .btn-outline-secondary {
+        color: #2B3241;
+        border: 2px solid #e9ecef;
+    }
+
+    .btn-outline-secondary:hover {
+        color: white;
+        background-color: #2B3241;
+        border-color: #2B3241;
+    }
+
+    .settings-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .settings-header {
+        background: linear-gradient(135deg, #2B3241, #4A5568);
+        color: white;
+        border-radius: 20px 20px 0 0;
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        color: #2B3241;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border-radius: 15px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #2B3241;
+        box-shadow: 0 0 0 0.2rem rgba(43, 50, 65, 0.25);
+        outline: none;
+    }
+
+    .alert {
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .alert i {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="container py-5">
     <div class="row g-4">
-
-        <!-- ✅ Profile Sidebar -->
+        <!-- Profile Sidebar -->
         <div class="col-md-4">
-            <div class="card shadow-lg border-0 rounded-4 h-100" style="background: #E8E2D0; border-radius: 20px;">
-                <div class="card-body text-center p-4">
-
-                    <!-- User Info -->
-                    <div class="profile-avatar mb-4">
-                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
-                             alt="Profile" 
-                             class="rounded-circle border shadow-sm" 
-                             style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #2B3241;">
+            <div class="profile-card h-100">
+                <div class="profile-info">
+                    <div class="profile-avatar">
+                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" alt="Profile"
+                            class="rounded-circle border shadow-sm">
                     </div>
 
-                    <h4 class="mb-1 fw-bold" style="color: #2B3241;">{{ user.get_full_name }}</h4>
-                    <p class="text-muted mb-3 fs-6">{{ user.email }}</p>
-
-                    <div class="d-flex justify-content-center gap-4 mb-3">
-                        <div class="text-muted"><i class="bi bi-calendar-check"></i> Age: {{ user.age }}</div>
-                        <div class="text-muted"><i class="bi bi-clock-history"></i> Member Since: {{ user.date_joined|date:"F j, Y" }}</div>
+                    <h4 class="profile-name">{{ user.get_full_name }}</h4>
+                    <p class="profile-email">{{ user.email }}</p>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-user"></i>
+                            <span>Age: {{ user.age }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Member Since: {{ user.date_joined|date:"F j, Y" }}</span>
+                        </div>
                     </div>
-
-                    <!-- Action Buttons -->
-                    <div class="d-grid gap-3 mt-4">
-                        <a href="{% url 'change_password' %}" 
-                           class="btn btn-sm rounded-pill px-4 py-2"
-                           style="background: #8B694D; color: #E8E2D0; border: none;">
+                    <div class="profile-buttons">
+                        <a href="{% url 'change_password' %}" class="btn profile-btn btn-primary">
                             <i class="bi bi-lock-fill me-2"></i> Change Password
                         </a>
-                        <a href="{% url 'logout' %}" 
-                           class="btn btn-outline-secondary btn-sm rounded-pill px-4 py-2"
-                           style="border-color: #9EA2AD; color: #2B3241;">
+                        <a href="{% url 'logout' %}" class="btn profile-btn btn-outline-secondary">
                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- ✅ Account Settings -->
-        <div class="col-md-8">
-            <div class="card shadow-lg border-0 rounded-4" style="background: #FFF; border-radius: 20px;">
-                <div class="card-header text-white py-3" 
-                     style="background: linear-gradient(135deg, #2B3241, #4A5568); border-radius: 20px 20px 0 0;">
-                    <h3 class="mb-0 fw-bold"><i class="bi bi-gear-fill me-2"></i> Account Settings</h3>
+        <div class="profile-photo-modal" id="photoModal">
+            <div class="photo-modal-content">
+                <div class="photo-modal-header">
+                    <h3>Select Profile Photo</h3>
+                    <button class="close-modal" onclick="closeModal()">&times;</button>
                 </div>
+                <div class="photo-grid" id="photoGrid">
+                    <!-- Photos will be populated by JavaScript -->
+                </div>
+                <button class="save-button" onclick="saveSelectedPhoto()">Save Selection</button>
+            </div>
+        </div>
 
+        <!-- Account Settings -->
+        <div class="col-md-8">
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h3 class="mb-0">
+                        <i class="bi bi-gear-fill me-2"></i> Account Settings
+                    </h3>
+                </div>
                 <div class="card-body p-5">
-
-                    <!-- Alert Messages -->
                     {% if messages %}
-                    <div class="mb-4">
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} rounded-3 p-3" role="alert">
-                            {{ message }}
-                        </div>
-                        {% endfor %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        {{ message }}
                     </div>
+                    {% endfor %}
                     {% endif %}
 
-                    <!-- Form -->
                     <form method="POST" action="{% url 'profile' %}" id="profileForm">
                         {% csrf_token %}
-
                         <div class="row g-4">
-
                             <div class="col-md-6">
-                                <label class="form-label fw-medium mb-1" style="color: #2B3241;">First Name</label>
+                                <label class="form-label">First Name</label>
                                 <div class="input-group">
-                                    <input type="text" 
-                                           class="form-control rounded-pill" 
-                                           name="first_name" 
-                                           value="{{ user.first_name }}" 
-                                           required
-                                           style="border: 1px solid #B0A18B; background: #F8F9FA;">
+                                    <input type="text" class="form-control" name="first_name"
+                                        value="{{ user.first_name }}" required placeholder="Enter your first name">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-medium mb-1" style="color: #2B3241;">Last Name</label>
+                                <label class="form-label">Last Name</label>
                                 <div class="input-group">
-                                    <input type="text" 
-                                           class="form-control rounded-pill" 
-                                           name="last_name" 
-                                           value="{{ user.last_name }}" 
-                                           required
-                                           style="border: 1px solid #B0A18B; background: #F8F9FA;">
+                                    <input type="text" class="form-control" name="last_name"
+                                        value="{{ user.last_name }}" required placeholder="Enter your last name">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-medium mb-1" style="color: #2B3241;">Email Address</label>
+                                <label class="form-label">Email Address</label>
                                 <div class="input-group">
-                                    <input type="email" 
-                                           class="form-control rounded-pill" 
-                                           name="email" 
-                                           value="{{ user.email }}" 
-                                           readonly
-                                           style="border: 1px solid #B0A18B; background: #F8F9FA;">
+                                    <input type="email" class="form-control" name="email" value="{{ user.email }}"
+                                        readonly placeholder="Enter your email address">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-medium mb-1" style="color: #2B3241;">Age</label>
+                                <label class="form-label">Age</label>
                                 <div class="input-group">
-                                    <input type="number" 
-                                           class="form-control rounded-pill" 
-                                           name="age" 
-                                           value="{{ user.age }}" 
-                                           required
-                                           style="border: 1px solid #B0A18B; background: #F8F9FA;">
+                                    <input type="number" class="form-control" name="age" value="{{ user.age }}" required
+                                        placeholder="Enter your age">
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-4 text-center">
-                            <button type="submit" 
-                                    class="btn w-50 rounded-pill px-4 py-2"
-                                    style="background: #8B694D; color: #E8E2D0; border: none;">
+                            <button type="submit" class="btn profile-btn btn-primary">
                                 <i class="bi bi-save me-2"></i> Save Changes
                             </button>
                         </div>
@@ -136,4 +443,91 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('profileForm');
+
+        form.addEventListener('submit', function (e) {
+            // Show loading state
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitButton.disabled = true;
+        });
+    });
+    const profilePhotos = [
+        {% for photo in profile_photos %}
+    {
+        url: "{{ photo.url }}",
+            id: "{{ photo.id }}"
+    },
+    {% endfor %}
+];
+
+    function openModal() {
+        document.getElementById('photoModal').style.display = 'block';
+        populatePhotoGrid();
+    }
+
+    function closeModal() {
+        document.getElementById('photoModal').style.display = 'none';
+        clearSelection();
+    }
+
+    function populatePhotoGrid() {
+        const grid = document.getElementById('photoGrid');
+        grid.innerHTML = '';
+
+        profilePhotos.forEach(photo => {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `<img src="${photo.url}" alt="Profile photo" data-id="${photo.id}">`;
+            photoItem.onclick = () => selectPhoto(photo.id);
+            grid.appendChild(photoItem);
+        });
+    }
+
+    function selectPhoto(photoId) {
+        const photos = document.querySelectorAll('.photo-item');
+        photos.forEach(photo => {
+            const img = photo.querySelector('img');
+            if (img.dataset.id === photoId) {
+                photo.classList.add('selected');
+            } else {
+                photo.classList.remove('selected');
+            }
+        });
+    }
+
+    function clearSelection() {
+        const photos = document.querySelectorAll('.photo-item');
+        photos.forEach(photo => photo.classList.remove('selected'));
+    }
+
+    function saveSelectedPhoto() {
+        const selectedPhoto = document.querySelector('.photo-item.selected');
+        if (selectedPhoto) {
+            const img = selectedPhoto.querySelector('img');
+            const photoId = img.dataset.id;
+            // Here you would typically make an AJAX call to save the selection
+            console.log('Selected photo:', photoId);
+            closeModal();
+        }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('photoModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+    // Close modal when pressing ESC
+    document.onkeydown = function (event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    };
+</script>
 {% endblock %}
