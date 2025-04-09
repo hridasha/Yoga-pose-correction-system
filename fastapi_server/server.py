@@ -135,6 +135,25 @@ async def process_frame(websocket: WebSocket):
                                     f"Actual={error['actual']:.1f}°, Target={error['target']:.1f}°, "
                                     f"Range=[{error['min']:.1f}°-{error['max']:.1f}°] ({within_range})"
                                 )
+                                
+                            # Find highest error and speak feedback
+                            if errors:
+                                highest_error = max(errors.items(), key=lambda x: x[1]['error']) if errors else None
+                                if highest_error:
+                                    angle_name = highest_error[0]
+                                    error_value = highest_error[1]['error']
+                                    actual_angle = highest_error[1]['actual']
+                                    target_angle = highest_error[1]['target']
+                                    
+                                    # Generate speech feedback
+                                    speech_text = f"Adjust your {angle_name.lower()} to {target_angle:.1f} degrees. Current angle is {actual_angle:.1f} degrees with an error of {error_value:.1f} degrees."
+                                    
+                                    # Speak feedback
+                                    engine.say(speech_text)
+                                    engine.runAndWait()
+                                    
+                                    # Add cooldown period
+                                    detector.feedback_timer_start = time.time() + 5  # Add 5 seconds delay before next feedback
                         else:
                             print("[WARNING] No ideal angles available for feedback")
 
