@@ -182,15 +182,13 @@
 <div class="container-fluid py-5">
     <div class="pose-container">
         <h1 class="text-center mb-4" style="color: #2B3241;">Yoga Pose Selection</h1>
-        <p class="text-center text-muted mb-5">Explore our collection of yoga poses and find the perfect one for your practice</p>
+        <p class="text-center text-muted mb-5">Explore our collection of yoga poses and find the perfect one for your
+            practice</p>
 
         <div class="search-container text-center">
             <div class="search-wrapper">
-                <input type="text" 
-                       id="searchInput" 
-                       class="search-input" 
-                       placeholder="Search for a Yoga Pose..."
-                       onkeyup="filterPoses()">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a Yoga Pose..."
+                    onkeyup="filterPoses()">
             </div>
         </div>
 
@@ -201,12 +199,17 @@
             <div class="col-md-3 col-lg-3 pose-card">
                 <div class="card h-100">
                     <div class="position-relative">
-                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
-                             class="card-img-top" 
-                             alt="{{ pose.pose_name }}">
+                        {% if pose.image %}
+                        <img src="{{ pose.image.url }}" class="card-img-top" alt="{{ pose.pose_name }} image">
+                        {% else %}
+                        <img src="{% static 'pose_selection/images/default_pose.jpg' %}" class="card-img-top"
+                            alt="Default Pose Image">
+                        {% endif %}
+                        {% if pose.level == "Beginner" %}
                         <span class="level-badge level-{{ pose.level|lower }}">
                             {{ pose.level }}
                         </span>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         <h5 class="card-title">{{ pose.pose_name }}</h5>
@@ -214,12 +217,13 @@
                         <ul class="benefits-list">
                             {% for benefit in pose.benefits %}
                             <li><i class="fas fa-check"></i>{{ benefit }}</li>
+                            {% empty %}
+                            <li>No benefits listed.</li>
                             {% endfor %}
                         </ul>
                     </div>
                     <div class="card-footer bg-white border-0">
-                        <a href="{% url 'yoga_details' pose_name=pose.pose_name %}" 
-                           class="btn select-btn">
+                        <a href="{% url 'yoga_details' pose_name=pose.pose_name %}" class="btn select-btn">
                             <i class="fas fa-arrow-right"></i>Select Pose
                         </a>
                     </div>
@@ -243,10 +247,10 @@
             let fullName = poseName + ' ' + englishName;
 
             if (fullName.includes(input)) {
-                card.classList.remove("hidden"); 
+                card.classList.remove("hidden");
                 found = true;
             } else {
-                card.classList.add("hidden"); 
+                card.classList.add("hidden");
             }
         });
 

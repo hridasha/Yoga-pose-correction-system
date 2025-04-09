@@ -136,8 +136,13 @@
                         <div class="col-md-4">
                             <div class="card h-100 shadow-sm">
                                 <div class="position-relative">
-                                    <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}"
-                                        class="card-img-top" alt="Yoga Pose">
+                                    {% if pose.image %}
+                                    <img src="{{ pose.image.url }}" class="card-img-top" alt="{{ pose.pose_name }}"
+                                        style="height: 440px; object-fit: cover;">
+                                    {% else %}
+                                    <img src="{% static 'images/default_pose.jpg' %}" class="card-img-top" alt="{{ pose.pose_name }}"
+                                        style="height: 200px; object-fit: cover;">
+                                    {% endif %}
                                     <span class="badge position-absolute" style="top: 10px; left: 10px; padding: 8px 12px; font-size: 14px; 
                                         {% if pose.level == 'Beginner' %} background-color: #8B694D; color: white; 
                                         {% elif pose.level == 'Intermediate' %} background-color: #2B3241; color: white; 

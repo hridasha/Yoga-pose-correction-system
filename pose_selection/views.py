@@ -267,12 +267,15 @@ def yoga_options(request, pose_name):
 
 
 def live_correction(request, pose_name):
-    
-    
-    context = {
-        'pose_name': pose_name
-    }
-    return render(request, 'pose_selection/live_correction.html', context)
+    try:
+        pose = YogaPoseDetails.objects.get(pose_name=pose_name)
+        context = {
+            'pose_name': pose_name,
+            'pose': pose
+        }
+        return render(request, 'pose_selection/live_correction.html', context)
+    except YogaPoseDetails.DoesNotExist:
+        return HttpResponse("Pose not found", status=404)
 
 def yoga_poses(request):
     """Display unique yoga poses."""

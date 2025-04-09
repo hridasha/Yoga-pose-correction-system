@@ -123,8 +123,11 @@
             <!-- Left Side: Larger Image -->
             <div class="col-md-5 mb-4 mb-md-0">
                 <div class="pose-image">
-                    <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" alt="{{ pose.pose_name }}"
-                        style="height: 100%;">
+                    {% if pose.image %}
+                    <img src="{{ pose.image.url }}" alt="{{ pose.pose_name }} Image" class="img-fluid">
+                    {% else %}
+                    <img src="{% static 'images/default_pose_image.jpg' %}" alt="Default Pose Image" class="img-fluid">
+                    {% endif %}
                 </div>
             </div>
 
@@ -183,10 +186,11 @@
                 {% for related_pose in related_poses %}
                 <div class="col-md-3 mb-4">
                     <div class="card h-100">
-                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
-                             class="card-img-top" 
-                             alt="{{ related_pose.pose_name }}"
-                             style="height: 200px; object-fit: cover;">
+                        {% if related_pose.image %}
+                        <img src="{{ related_pose.image.url }}" class="card-img-top" style = "height: 250px; object-fit: cover;"  alt="{{ related_pose.pose_name }} image">
+                        {% else %}
+                        <img src="{% static 'images/default_pose_image.jpg' %}" class="card-img-top" alt="Default Pose Image">
+                        {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ related_pose.pose_name }}</h5>
                             <p class="card-text text-muted">

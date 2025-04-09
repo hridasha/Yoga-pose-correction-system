@@ -9,7 +9,8 @@ class YogaPoseIdealAngleAdmin(admin.ModelAdmin):
      
 @admin.register(YogaPoseDetails)
 class YogaPoseDetailsAdmin(admin.ModelAdmin):
-    list_display = ('pose_name', 'english_name', 'benefits', 'level', 'hold_duration')
+    list_display = ('pose_name', 'english_name', 'benefits', 'level', 'hold_duration', 'image')
+    # list_editable = ('image')
     search_fields = ('pose_name', 'english_name', 'benefits', 'level')
     list_filter = ('pose_name', 'level')
 

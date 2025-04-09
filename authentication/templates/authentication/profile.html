@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 {% endblock %}
 
 {% block content %}
@@ -110,6 +110,156 @@
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     }
 
+    /* Profile Photo Modal */
+    .profile-photo-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+    }
+
+    .photo-modal-content {
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 12px;
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        margin: 50px auto;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .photo-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .photo-modal-header h3 {
+        color: #8B694D;
+        margin: 0;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        color: #E8E2D0;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+    }
+
+    .photo-item {
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+        border-radius: 8px;
+        background-color: rgba(232, 226, 208, 0.1);
+    }
+
+    .photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .photo-item:hover img {
+        transform: scale(1.05);
+    }
+
+    .photo-item.selected {
+        border: 2px solid #8B694D;
+    }
+
+    .photo-item.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #8B694D;
+        font-size: 20px;
+        background: rgba(232, 226, 208, 0.9);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .save-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        margin-top: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    < !-- Reference Image Overlay -->.reference-overlay {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        background-color: rgba(43, 50, 65, 0.9);
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .reference-overlay h4 {
+        color: #8B694D;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .reference-overlay .camera-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: transform 0.3s ease;
+    }
+
+    .reference-overlay .camera-button:hover {
+        transform: scale(1.1);
+    }
+
+
+    .save-button:hover {
+        background-color: #725239;
+    }
+
     .btn-primary {
         background-color: #2B3241;
         border: none;
@@ -187,19 +337,19 @@
             <div class="profile-card h-100">
                 <div class="profile-info">
                     <div class="profile-avatar">
-                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" 
-                             alt="Profile" 
-                             class="rounded-circle border shadow-sm">
+                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" alt="Profile"
+                            class="rounded-circle border shadow-sm">
                     </div>
+
                     <h4 class="profile-name">{{ user.get_full_name }}</h4>
                     <p class="profile-email">{{ user.email }}</p>
                     <div class="profile-stats">
                         <div class="stat-item">
-                            <i class="bi bi-calendar-check"></i>
+                            <i class="fas fa-user"></i>
                             <span>Age: {{ user.age }}</span>
                         </div>
                         <div class="stat-item">
-                            <i class="bi bi-clock-history"></i>
+                            <i class="fas fa-calendar"></i>
                             <span>Member Since: {{ user.date_joined|date:"F j, Y" }}</span>
                         </div>
                     </div>
@@ -214,6 +364,18 @@
                 </div>
             </div>
         </div>
+        <div class="profile-photo-modal" id="photoModal">
+            <div class="photo-modal-content">
+                <div class="photo-modal-header">
+                    <h3>Select Profile Photo</h3>
+                    <button class="close-modal" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="photo-grid" id="photoGrid">
+                    <!-- Photos will be populated by JavaScript -->
+                </div>
+                <button class="save-button" onclick="saveSelectedPhoto()">Save Selection</button>
+            </div>
+        </div>
 
         <!-- Account Settings -->
         <div class="col-md-8">
@@ -225,12 +387,12 @@
                 </div>
                 <div class="card-body p-5">
                     {% if messages %}
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }}" role="alert">
-                            <i class="fas fa-info-circle"></i>
-                            {{ message }}
-                        </div>
-                        {% endfor %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
                     {% endif %}
 
                     <form method="POST" action="{% url 'profile' %}" id="profileForm">
@@ -239,48 +401,32 @@
                             <div class="col-md-6">
                                 <label class="form-label">First Name</label>
                                 <div class="input-group">
-                                    <input type="text" 
-                                           class="form-control" 
-                                           name="first_name" 
-                                           value="{{ user.first_name }}" 
-                                           required
-                                           placeholder="Enter your first name">
+                                    <input type="text" class="form-control" name="first_name"
+                                        value="{{ user.first_name }}" required placeholder="Enter your first name">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Last Name</label>
                                 <div class="input-group">
-                                    <input type="text" 
-                                           class="form-control" 
-                                           name="last_name" 
-                                           value="{{ user.last_name }}" 
-                                           required
-                                           placeholder="Enter your last name">
+                                    <input type="text" class="form-control" name="last_name"
+                                        value="{{ user.last_name }}" required placeholder="Enter your last name">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Email Address</label>
                                 <div class="input-group">
-                                    <input type="email" 
-                                           class="form-control" 
-                                           name="email" 
-                                           value="{{ user.email }}" 
-                                           readonly
-                                           placeholder="Enter your email address">
+                                    <input type="email" class="form-control" name="email" value="{{ user.email }}"
+                                        readonly placeholder="Enter your email address">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Age</label>
                                 <div class="input-group">
-                                    <input type="number" 
-                                           class="form-control" 
-                                           name="age" 
-                                           value="{{ user.age }}" 
-                                           required
-                                           placeholder="Enter your age">
+                                    <input type="number" class="form-control" name="age" value="{{ user.age }}" required
+                                        placeholder="Enter your age">
                                 </div>
                             </div>
                         </div>
@@ -298,10 +444,10 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('profileForm');
-        
-        form.addEventListener('submit', function(e) {
+
+        form.addEventListener('submit', function (e) {
             // Show loading state
             const submitButton = form.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
@@ -309,5 +455,79 @@
             submitButton.disabled = true;
         });
     });
+    const profilePhotos = [
+        {% for photo in profile_photos %}
+    {
+        url: "{{ photo.url }}",
+            id: "{{ photo.id }}"
+    },
+    {% endfor %}
+];
+
+    function openModal() {
+        document.getElementById('photoModal').style.display = 'block';
+        populatePhotoGrid();
+    }
+
+    function closeModal() {
+        document.getElementById('photoModal').style.display = 'none';
+        clearSelection();
+    }
+
+    function populatePhotoGrid() {
+        const grid = document.getElementById('photoGrid');
+        grid.innerHTML = '';
+
+        profilePhotos.forEach(photo => {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `<img src="${photo.url}" alt="Profile photo" data-id="${photo.id}">`;
+            photoItem.onclick = () => selectPhoto(photo.id);
+            grid.appendChild(photoItem);
+        });
+    }
+
+    function selectPhoto(photoId) {
+        const photos = document.querySelectorAll('.photo-item');
+        photos.forEach(photo => {
+            const img = photo.querySelector('img');
+            if (img.dataset.id === photoId) {
+                photo.classList.add('selected');
+            } else {
+                photo.classList.remove('selected');
+            }
+        });
+    }
+
+    function clearSelection() {
+        const photos = document.querySelectorAll('.photo-item');
+        photos.forEach(photo => photo.classList.remove('selected'));
+    }
+
+    function saveSelectedPhoto() {
+        const selectedPhoto = document.querySelector('.photo-item.selected');
+        if (selectedPhoto) {
+            const img = selectedPhoto.querySelector('img');
+            const photoId = img.dataset.id;
+            // Here you would typically make an AJAX call to save the selection
+            console.log('Selected photo:', photoId);
+            closeModal();
+        }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('photoModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+    // Close modal when pressing ESC
+    document.onkeydown = function (event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    };
 </script>
 {% endblock %}

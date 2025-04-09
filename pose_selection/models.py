@@ -58,6 +58,7 @@ class YogaPoseDetails(models.Model):
     benefits = models.TextField()
     level = models.CharField(max_length=20)
     hold_duration = models.CharField(max_length=20)
+    image = models.ImageField(blank=True, null=True)
 
     def __str__(self):
         return self.pose_name
@@ -69,6 +70,8 @@ class YogaPoseHold(models.Model):
 
     def __str__(self):
         return self.pose_name
+
+
 
 # class UserHistory(models.Model):
 #     ACTIVITY_TYPES = (

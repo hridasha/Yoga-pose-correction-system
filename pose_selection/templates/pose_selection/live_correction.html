@@ -5,60 +5,129 @@
 
 <!--  Embedded CSS -->
 <style>
-    /*  YogaAI Theme Colors */
+    /* YogaAI Theme Colors */
     body {
         background-color: #E8E2D0;
-        /* Soft Beige */
         color: #2B3241;
-        /* Deep Navy Gray */
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .header {
         background-color: #2B3241;
-        /* Deep Navy Gray */
         color: #E8E2D0;
-        /* Soft Beige */
         padding: 15px;
     }
 
-    /*  Wider Video Container */
+    /* Video Container with Reference Overlay */
     .video-container {
         background-color: black;
         width: 100%;
-        max-width: 100%;
         height: 90vh;
-        /* Larger stream */
-        max-height: 800px;
-        /* Keep it wide on large screens */
+        max-height: 900px;
         border-radius: 12px;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        margin-bottom: 20px;
         overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        position: relative;
     }
 
     canvas {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
     }
 
+    /* Reference Image Overlay */
+    .reference-overlay {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        background-color: rgba(43, 50, 65, 0.9);
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .reference-overlay h4 {
+        color: #8B694D;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .reference-overlay .camera-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: transform 0.3s ease;
+    }
+
+    .reference-overlay .camera-button:hover {
+        transform: scale(1.1);
+    }
+
+    .reference-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 1px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .no-image-placeholder {
+        text-align: center;
+        padding: 20px;
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 8px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .no-image-placeholder i {
+        color: #8B694D;
+        margin-bottom: 7px;
+    }
+
+    .no-image-placeholder p {
+        color: #E8E2D0;
+        margin: 0;
+        font-size: 12px;
+    }
+
+    /* Status Bar */
     .status {
         font-size: 18px;
         color: #48bb78;
-        /* Green for running */
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        background-color: rgba(72, 187, 120, 0.1);
     }
 
     .status.not-running {
         color: #e53e3e;
-        /* Red for not running */
+        background-color: rgba(229, 62, 62, 0.1);
     }
 
+    /* Buttons */
     .btn-yoga {
         background-color: #8B694D;
-        /* Warm Brown */
         color: white;
         padding: 12px 24px;
         font-size: 18px;
@@ -66,15 +135,17 @@
         border-radius: 8px;
         transition: all 0.3s ease;
         cursor: pointer;
+        margin: 5px;
+        width: 150px;
     }
 
     .btn-yoga:hover {
-        background-color: #B0A18B;
-        /* Taupe */
-        color: #2B3241;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        background-color: #725239;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
+    /* Instructions */
     .instructions {
         background-color: #2B3241;
         color: #E8E2D0;
@@ -84,251 +155,521 @@
         margin-top: 30px;
     }
 
-    .footer {
-        font-size: 14px;
-        color: #B0A18B;
-    }
-
-    .footer a {
+    .instructions h3 {
         color: #8B694D;
-        text-decoration: none;
+        margin-bottom: 20px;
     }
 
-    .footer a:hover {
+    .instructions p {
+        margin-bottom: 10px;
+        padding-left: 20px;
+        position: relative;
+    }
+
+    .instructions p:before {
+        content: "•";
+        color: #8B694D;
+        font-size: 20px;
+        position: absolute;
+        left: 0;
+        top: 5px;
+    }
+
+    /* Correction Panel */
+    .correction-panel {
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .correction-panel h4 {
+        color: #8B694D;
+        margin-bottom: 20px;
+    }
+
+    .corrections-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .correction-item {
+        margin: 10px 0;
+        padding: 12px;
+        border-radius: 8px;
+        background-color: rgba(229, 62, 62, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .correction-item:hover {
+        background-color: rgba(229, 62, 62, 0.3);
+        transform: translateX(5px);
+    }
+
+    .no-corrections {
+        text-align: center;
+        padding: 30px;
+        background-color: rgba(72, 187, 120, 0.2);
+        border-radius: 8px;
+    }
+
+    .checkmark {
+        font-size: 24px;
         color: #48bb78;
+        margin-right: 10px;
     }
 
-    /*  Responsive Design */
+    /* Profile Photo Modal */
+    .profile-photo-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+    }
+
+    .photo-modal-content {
+        background-color: #2B3241;
+        color: #E8E2D0;
+        border-radius: 12px;
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        margin: 50px auto;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .photo-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .photo-modal-header h3 {
+        color: #8B694D;
+        margin: 0;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        color: #E8E2D0;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+    }
+
+    .photo-item {
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+        border-radius: 8px;
+        background-color: rgba(232, 226, 208, 0.1);
+    }
+
+    .photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .photo-item:hover img {
+        transform: scale(1.05);
+    }
+
+    .photo-item.selected {
+        border: 2px solid #8B694D;
+    }
+
+    .photo-item.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #8B694D;
+        font-size: 20px;
+        background: rgba(232, 226, 208, 0.9);
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .save-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #8B694D;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        margin-top: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .save-button:hover {
+        background-color: #725239;
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
         .video-container {
             height: 80vh;
             max-height: 600px;
+        }
+
+        .reference-overlay {
+            width: 150px;
+            height: 150px;
+        }
+
+        .btn-yoga {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .instructions {
+            padding: 20px;
         }
     }
 </style>
 
 <div class="container mt-5">
 
+
     <div class="video-container">
         <canvas id="videoCanvas"></canvas>
+        <!-- Reference Image Overlay -->
+        <div class="reference-overlay">
+            {% if pose.image %}
+                <img src="{{ pose.image.url }}" alt="{{ pose_name }} reference" class="reference-image">
+            {% else %}
+                <div class="no-image-placeholder">
+                    <i class="fas fa-image"></i>
+                    <p>No reference</p>
+                </div>
+            {% endif %}
+            <button class="camera-button" onclick="openModal()">&#128247;</button>
+        </div>
     </div>
 
     <div class="status">Server Status: <span id="serverStatus">Checking...</span></div>
-    <button class="btn-yoga" id="startButton">Start Stream</button>
-    <button class="btn-yoga" id="stopButton" style="display: none;">Stop Stream</button>
+    
+    <div class="button-container text-center">
+        <button class="btn-yoga" id="startButton">Start Stream</button>
+        <button class="btn-yoga" id="stopButton" style="display: none;">Stop Stream</button>
+    </div>
 
     <div class="instructions">
         <h3>Instructions</h3>
         <p>1. Click "Start Stream" to begin the video feed</p>
         <p>2. Position yourself in front of the camera</p>
         <p>3. Click "Stop Stream" when you're done</p>
+        <p>4. Follow the real-time corrections shown below</p>
     </div>
 
-    <div class="instructions">
-        <h3>Current Pose Analysis</h3>
-        <div id="poseAnalysis">
-            <div class="Pose-Info">
-                <h4>Current Pose</h4>
-                <div id="poseName" class="pose-name"></div>
-            </div>
-
-            <div class="corrections-container">
-                <h4>Corrections Needed</h4>
-                <div id="corrections" class="corrections-list">
-                    <div id="noCorrections" class="no-corrections" style="display: none;">
-                        <span class="checkmark">✓</span>
-                        <span class="feedback-text">Great job! Your alignment is excellent.</span>
-                    </div>
-                </div>
+    <div class="correction-panel">
+        <h4>Corrections Needed</h4>
+        <div id="corrections" class="corrections-list">
+            <div id="noCorrections" class="no-corrections" style="display: none;">
+                <span class="checkmark">✓</span>
+                <span class="feedback-text">Great job! Your alignment is excellent.</span>
             </div>
         </div>
     </div>
 
-</div>
+    <!-- Profile Photo Modal -->
+    <div class="profile-photo-modal" id="photoModal">
+        <div class="photo-modal-content">
+            <div class="photo-modal-header">
+                <h3>Select Profile Photo</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="photo-grid" id="photoGrid">
+                <!-- Photos will be populated by JavaScript -->
+            </div>
+            <button class="save-button" onclick="saveSelectedPhoto()">Save Selection</button>
+        </div>
+    </div>
 
-<script>
-    const canvas = document.getElementById('videoCanvas');
-    const ctx = canvas.getContext('2d');
-    let websocket = null;
-    let isStreaming = false;
-    const urlPath = window.location.pathname;
-    const poseName = decodeURIComponent(urlPath.split("/")[2]);
+    <script>
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+        let websocket = null;
+        let isStreaming = false;
+        const urlPath = window.location.pathname;
+        const poseName = decodeURIComponent(urlPath.split("/")[2]);
 
-    function initializeCanvas() {
-        const container = document.querySelector('.video-container');
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-
-        window.addEventListener('resize', () => {
+        function initializeCanvas() {
+            const container = document.querySelector('.video-container');
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
-        });
-    }
 
-    async function connectWebSocket() {
-        try {
-            const wsUrl = `ws://127.0.0.1:8001/ws/correction/${poseName}`;
-            websocket = new WebSocket(wsUrl);
+            window.addEventListener('resize', () => {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            });
+        }
 
-            websocket.binaryType = 'arraybuffer';
+        async function connectWebSocket() {
+            try {
+                const wsUrl = `ws://127.0.0.1:8001/ws/correction/${poseName}`;
+                websocket = new WebSocket(wsUrl);
 
-            websocket.onopen = () => {
-                console.log('WebSocket connection established');
-                document.getElementById('serverStatus').textContent = 'Connected';
-                document.getElementById('serverStatus').classList.remove('not-running');
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            };
+                websocket.binaryType = 'arraybuffer';
 
-            websocket.onmessage = async (event) => {
-                try {
-                    if (typeof event.data === "string") {
-                        const data = JSON.parse(event.data);
-                        console.log("[INFO] Received pose correction data:", data);
-                        updateUI(data);
-                        return;
-                    }
+                websocket.onopen = () => {
+                    console.log('WebSocket connection established');
+                    document.getElementById('serverStatus').textContent = 'Connected';
+                    document.getElementById('serverStatus').classList.remove('not-running');
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                };
 
-                    const array = new Uint8Array(event.data);
-                    const blob = new Blob([array], { type: 'image/jpeg' });
-                    const url = URL.createObjectURL(blob);
-
-                    const img = new Image();
-                    img.onload = () => {
-                        ctx.fillStyle = 'black';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                        const aspectRatio = img.width / img.height;
-                        let drawWidth = canvas.width;
-                        let drawHeight = canvas.height;
-
-                        if (img.width > img.height) {
-                            drawHeight = canvas.width / aspectRatio;
-                        } else {
-                            drawWidth = canvas.height * aspectRatio;
+                websocket.onmessage = async (event) => {
+                    try {
+                        if (typeof event.data === "string") {
+                            const data = JSON.parse(event.data);
+                            console.log("[INFO] Received pose correction data:", data);
+                            updateUI(data);
+                            return;
                         }
 
-                        const x = (canvas.width - drawWidth) / 2;
-                        const y = (canvas.height - drawHeight) / 2;
+                        const array = new Uint8Array(event.data);
+                        const blob = new Blob([array], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
 
-                        ctx.drawImage(img, x, y, drawWidth, drawHeight);
-                        URL.revokeObjectURL(url);
-                    };
-                    img.src = url;
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.fillStyle = 'black';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                } catch (error) {
-                    console.error('Error processing WebSocket message:', error);
+                            const aspectRatio = img.width / img.height;
+                            let drawWidth = canvas.width;
+                            let drawHeight = canvas.height;
+
+                            if (img.width > img.height) {
+                                drawHeight = canvas.width / aspectRatio;
+                            } else {
+                                drawWidth = canvas.height * aspectRatio;
+                            }
+
+                            const x = (canvas.width - drawWidth) / 2;
+                            const y = (canvas.height - drawHeight) / 2;
+
+                            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                            URL.revokeObjectURL(url);
+                        };
+                        img.src = url;
+
+                    } catch (error) {
+                        console.error('Error processing WebSocket message:', error);
+                        ctx.fillStyle = 'black';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = 'red';
+                        ctx.font = '24px Arial';
+                        ctx.fillText('Error displaying video or feedback', 10, 50);
+                    }
+                };
+
+                websocket.onclose = () => {
+                    console.log('WebSocket connection closed');
+                    document.getElementById('serverStatus').textContent = 'Disconnected';
+                    document.getElementById('serverStatus').classList.add('not-running');
+                    websocket = null;
                     ctx.fillStyle = 'black';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = 'red';
                     ctx.font = '24px Arial';
-                    ctx.fillText('Error displaying video or feedback', 10, 50);
-                }
-            };
+                    ctx.fillText('Disconnected from server', 10, 50);
+                };
 
-            websocket.onclose = () => {
-                console.log('WebSocket connection closed');
-                document.getElementById('serverStatus').textContent = 'Disconnected';
-                document.getElementById('serverStatus').classList.add('not-running');
-                websocket = null;
+                websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    document.getElementById('serverStatus').textContent = 'Error';
+                    document.getElementById('serverStatus').classList.add('not-running');
+                    websocket = null;
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'red';
+                    ctx.font = '24px Arial';
+                    ctx.fillText('WebSocket connection error', 10, 50);
+                };
+            } catch (error) {
+                console.error('Failed to connect to WebSocket:', error);
                 ctx.fillStyle = 'black';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'red';
                 ctx.font = '24px Arial';
-                ctx.fillText('Disconnected from server', 10, 50);
-            };
+                ctx.fillText('Failed to connect to server', 10, 50);
+            }
+        }
 
-            websocket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                document.getElementById('serverStatus').textContent = 'Error';
-                document.getElementById('serverStatus').classList.add('not-running');
-                websocket = null;
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.font = '24px Arial';
-                ctx.fillText('WebSocket connection error', 10, 50);
-            };
-        } catch (error) {
-            console.error('Failed to connect to WebSocket:', error);
+        function startStream() {
+            if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+            }
+            isStreaming = true;
+            document.getElementById('startButton').style.display = 'none';
+            document.getElementById('stopButton').style.display = 'inline';
+        }
+
+        function stopStream() {
+            isStreaming = false;
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.close();
+            }
+            websocket = null;
+            document.getElementById('startButton').style.display = 'inline';
+            document.getElementById('stopButton').style.display = 'none';
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'red';
-            ctx.font = '24px Arial';
-            ctx.fillText('Failed to connect to server', 10, 50);
-        }
-    }
-
-    function startStream() {
-        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-            connectWebSocket();
-        }
-        isStreaming = true;
-        document.getElementById('startButton').style.display = 'none';
-        document.getElementById('stopButton').style.display = 'inline';
-    }
-
-    function stopStream() {
-        isStreaming = false;
-        if (websocket && websocket.readyState === WebSocket.OPEN) {
-            websocket.close();
-        }
-        websocket = null;
-        document.getElementById('startButton').style.display = 'inline';
-        document.getElementById('stopButton').style.display = 'none';
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function updateUI(data) {
-        // Update pose name
-        if (data.pose_name) {
-            document.getElementById('poseName').textContent = data.pose_name;
         }
 
-        // Update view
-        if (data.detected_view) {
-            document.getElementById('viewName').textContent = data.detected_view;
+        function updateUI(data) {
+            // Update pose name
+            if (data.pose_name) {
+                document.getElementById('poseName').textContent = data.pose_name;
+            }
+
+            // Update view
+            if (data.detected_view) {
+                document.getElementById('viewName').textContent = data.detected_view;
+            }
+
+            // Clear corrections
+            const correctionsDiv = document.getElementById('corrections');
+            correctionsDiv.innerHTML = '';
+
+            // Update corrections
+            if (data.corrections && data.corrections.length > 0) {
+                data.corrections.forEach(correction => {
+                    const correctionItem = document.createElement('div');
+                    correctionItem.className = 'correction-item';
+                    correctionItem.textContent = correction;
+                    correctionsDiv.appendChild(correctionItem);
+                });
+                document.getElementById('noCorrections').style.display = 'none';
+            } else {
+                document.getElementById('noCorrections').style.display = 'flex';
+            }
         }
 
-        // Clear corrections
-        const correctionsDiv = document.getElementById('corrections');
-        correctionsDiv.innerHTML = '';
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('http://127.0.0.1:8001/status');
+                const data = await response.json();
+                document.getElementById('serverStatus').textContent = `Running (${data.active_connections} connections)`;
+                document.getElementById('serverStatus').classList.remove('not-running');
+            } catch (error) {
+                document.getElementById('serverStatus').textContent = 'Not Running';
+                document.getElementById('serverStatus').classList.add('not-running');
+            }
+        }
 
-        // Update corrections
-        if (data.corrections && data.corrections.length > 0) {
-            data.corrections.forEach(correction => {
-                const correctionItem = document.createElement('div');
-                correctionItem.className = 'correction-item';
-                correctionItem.textContent = correction;
-                correctionsDiv.appendChild(correctionItem);
+        // Initialize canvas when page loads
+        window.onload = async function () {
+            initializeCanvas();
+            await checkServerStatus();
+        };
+
+        // Add event listeners immediately
+        document.getElementById('startButton').addEventListener('click', startStream);
+        document.getElementById('stopButton').addEventListener('click', stopStream);
+
+        // Sample profile photos (you should replace these with actual profile photos)
+        const profilePhotos = [
+            {% for photo in profile_photos %}
+            {
+                url: "{{ photo.url }}",
+                id: "{{ photo.id }}"
+            },
+            {% endfor %}
+        ];
+
+        function openModal() {
+            document.getElementById('photoModal').style.display = 'block';
+            populatePhotoGrid();
+        }
+
+        function closeModal() {
+            document.getElementById('photoModal').style.display = 'none';
+            clearSelection();
+        }
+
+        function populatePhotoGrid() {
+            const grid = document.getElementById('photoGrid');
+            grid.innerHTML = '';
+
+            profilePhotos.forEach(photo => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                photoItem.innerHTML = `<img src="${photo.url}" alt="Profile photo" data-id="${photo.id}">`;
+                photoItem.onclick = () => selectPhoto(photo.id);
+                grid.appendChild(photoItem);
             });
-            document.getElementById('noCorrections').style.display = 'none';
-        } else {
-            document.getElementById('noCorrections').style.display = 'flex';
         }
-    }
 
-    async function checkServerStatus() {
-        try {
-            const response = await fetch('http://127.0.0.1:8001/status');
-            const data = await response.json();
-            document.getElementById('serverStatus').textContent = `Running (${data.active_connections} connections)`;
-            document.getElementById('serverStatus').classList.remove('not-running');
-        } catch (error) {
-            document.getElementById('serverStatus').textContent = 'Not Running';
-            document.getElementById('serverStatus').classList.add('not-running');
+        function selectPhoto(photoId) {
+            const photos = document.querySelectorAll('.photo-item');
+            photos.forEach(photo => {
+                const img = photo.querySelector('img');
+                if (img.dataset.id === photoId) {
+                    photo.classList.add('selected');
+                } else {
+                    photo.classList.remove('selected');
+                }
+            });
         }
-    }
 
-    // Initialize canvas when page loads
-    window.onload = async function () {
-        initializeCanvas();
-        await checkServerStatus();
-    };
+        function clearSelection() {
+            const photos = document.querySelectorAll('.photo-item');
+            photos.forEach(photo => photo.classList.remove('selected'));
+        }
 
-    // Add event listeners immediately
-    document.getElementById('startButton').addEventListener('click', startStream);
-    document.getElementById('stopButton').addEventListener('click', stopStream);
-</script>
+        function saveSelectedPhoto() {
+            const selectedPhoto = document.querySelector('.photo-item.selected');
+            if (selectedPhoto) {
+                const img = selectedPhoto.querySelector('img');
+                const photoId = img.dataset.id;
+                // Here you would typically make an AJAX call to save the selection
+                console.log('Selected photo:', photoId);
+                closeModal();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('photoModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Close modal when pressing ESC
+        document.onkeydown = function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        };
+    </script>
+
 {% endblock %}

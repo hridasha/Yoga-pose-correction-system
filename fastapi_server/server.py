@@ -12,6 +12,12 @@ import sys
 import time
 from pose_utils import PoseDetector
 from pose_correction import PoseCorrection
+        
+import pyttsx3
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Set speech rate
+engine.setProperty('volume', 1)  # Set volume
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -180,7 +186,7 @@ async def process_frame(websocket: WebSocket):
                     "detected_pose": detector.current_pose,
                     "detected_view": detector.current_view,
                     "idealAngles": await detector.get_ideal_angles(detector.current_pose) if detector.current_pose else None,
-                    "errors": detector.calculate_error(detector.calculate_pose_angles(), detector.get_ideal_angles(detector.current_pose)) if detector.current_pose else None
+                    "errors": detector.calculate_error(detector.calculate_pose_angles(),await detector.get_ideal_angles(detector.current_pose)) if detector.current_pose else None
                 }))
             # if not detected_pose or not detected_view:
             #     if detector.current_pose and detector.current_view:
@@ -227,11 +233,6 @@ async def process_frame(websocket: WebSocket):
         await websocket.close()
         
         
-        
-import pyttsx3
-# Initialize text-to-speech engine
-engine = pyttsx3.init()
-engine.setProperty('rate', 150)  # Set speech rate
 
 
 
