@@ -121,6 +121,8 @@ class PoseCorrection:
         self.feedback_queue = []
         self.error_tracking = {}
         self.high_fps = True  
+        self.view_classified = False  # Add this flag
+
     def text_to_speech(self, text):
         """Convert text to speech."""
         engine = pyttsx3.init()
@@ -849,6 +851,7 @@ class PoseCorrection:
             #         self.pause_stability = False
             #         print("\nResuming stability checking...")
             #     return landmarks_dict
+            
             if self.pause_stability:
                 current_time = time.time()
 
@@ -856,7 +859,8 @@ class PoseCorrection:
                     self.pause_stability = False
                     print("\nResuming stability checking...")
                 else:
-                    print(f"\n[INFO] Time since last feedback: {current_time - self.last_feedback_time:.2f} seconds")
+                    # print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time:).2f} seconds")
+                    print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time):.2f} seconds")
 
                     if current_time - self.last_feedback_time >= self.feedback_interval:
                         self.last_feedback_time = current_time
@@ -912,10 +916,11 @@ class PoseCorrection:
                         # Store the last stable frame to use every 5s for feedback
                         self.last_frame_for_feedback = landmarks_dict.copy()
 
-                        # Only compute ideal angles once, and fix the best view
                         # if not self.ideal_angles_selected:
                         #     self.fixed_ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
                         #     self.ideal_angles_selected = True
+                        
+                        # get ideal angles
                         if not self.ideal_angles_selected:
                             ideal_data = await self.get_ideal_angles(pose_name, landmarks_dict)
                             for angle, val in ideal_data.items():
@@ -923,14 +928,13 @@ class PoseCorrection:
                                     print(f"[ERROR] Incomplete ideal angle data for {angle}: {val}")
                             self.fixed_ideal_angles = ideal_data
                             self.ideal_angles_selected = True
-
-
-                        # Check if it’s time to provide feedback
+                            
+                        #check time for feedback
                         current_time = time.time()
                         if current_time - self.last_feedback_time >= self.feedback_interval:
                             self.last_feedback_time = current_time
 
-                            # Recalculate angles using last saved frame
+                            #recalculate angles using last saved frame
                             if self.last_frame_for_feedback:
                                 angles = self.calculate_pose_angles(self.last_frame_for_feedback)
                                 errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
@@ -954,6 +958,12 @@ class PoseCorrection:
                         
                         self.print_stable_keypoints(landmarks_dict)
 
+                        # Only classify view once
+                        if not self.view_classified:
+                            self.current_view = self.classify_view(self.stable_coordinates)
+                            print(f"View classified as: {self.current_view}")
+                            self.view_classified = True
+
             self.previous_landmarks = landmarks_dict
             return landmarks_dict
 
@@ -970,7 +980,6 @@ class PoseCorrection:
 
         current_time = time.time()
         
-        # Track changes and prevent repeating the same feedback
         new_errors = {}
         for angle_name, error in errors.items():
             if not error['within_range']:

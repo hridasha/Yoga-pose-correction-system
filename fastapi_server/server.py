@@ -96,7 +96,7 @@ async def process_frame(websocket: WebSocket):
             print(f"Current FPS: {detector.fps:.2f}")
             print(f"Pose Detected: {detector.detected_pose}, View Detected: {detector.detected_view}, Match Calculated: {detector.calculated_best_match}")
             
-            # Print pose name if detected
+            # pose name
             if detector.current_pose:
                 print(f"Current Pose: {detector.current_pose}")
 
@@ -157,7 +157,6 @@ async def process_frame(websocket: WebSocket):
                         else:
                             print("[WARNING] No ideal angles available for feedback")
 
-            # === Step 2: Pre-classification stability check ===
             if detector.previous_landmarks:
                 stable_points = 0
                 for idx in detector.keypoints:
@@ -182,7 +181,6 @@ async def process_frame(websocket: WebSocket):
                         detector.stable_time = 0.0
                         await detector.print_stable_coordinates()
 
-                        # Classify pose and view only once
                         if not detector.detected_pose and not detector.detected_view:
                             pose_class, confidence = await detector.classify_pose(landmarks)
                             print(f"\n[INFO] Pose Classified: {pose_class} (Confidence: {confidence:.2f})")
@@ -261,10 +259,12 @@ async def process_frame(websocket: WebSocket):
 
 
 
+pose_corrector = PoseCorrection()
+
 async def process_websocket(websocket: WebSocket, pose_name: str):
     frame_count = 0
-    feedback_interval = 10  # Initial 2 FPS processing
-    cooldown_duration = 5  # 5 seconds cooldown
+    feedback_interval = 10 
+    cooldown_duration = 5  
     last_feedback_time = 0
     cap = cv2.VideoCapture(0)
     
@@ -273,17 +273,17 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
         return
     
     logger.info("Camera opened successfully")
-    corrector = pose_correction
+    corrector = pose_corrector
     detected_view = False
     previous_landmarks = None
     stable_time = 0
-    stability_threshold = 0.5  # 0.5 seconds
+    stability_threshold = 0.5  # 0.5 stablility check
     tolerance_range = 5
     ideal_angles_selected = False
     fixed_ideal_angles = None
     last_frame_for_feedback = None
     first_feedback_given = False
-    view_classified = False  # Track if view has been classified
+    view_classified = False 
      
     try:
         while cap.isOpened():
@@ -296,7 +296,6 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
             
             frame_count += 1
             
-            # Process every frame for video stream
             _, buffer = cv2.imencode(
                 ".jpg", 
                 frame, 
@@ -313,18 +312,15 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                 logger.info("WebSocket disconnected")
                 break
             
-            # Only process correction every feedback_interval frames
             if frame_count % feedback_interval == 0:
                 landmarks = await corrector.process_correction(frame, pose_name)
                 
                 if landmarks is not None:
-                    # Draw landmarks on the frame
                     for idx, (x, y, z, confidence) in landmarks.items():
                         if confidence > 0.5:
                             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
                             cv2.putText(frame, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
                     
-                    # Draw connections between landmarks
                     for (p1, p2) in corrector.connections:
                         if p1 in landmarks and p2 in landmarks:
                             x1, y1, _, _ = landmarks[p1]
@@ -349,25 +345,19 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                 # Store stable coordinates
                                 stable_coordinates = landmarks.copy()
                                 
-                                # Only classify view once
-                                if not view_classified:
-                                    view = corrector.classify_view(stable_coordinates)
-                                    logger.info(f"View classified as: {view}")
-                                    view_classified = True
-                                    
-                                    # Get ideal angles only once
-                                    if not ideal_angles_selected:
-                                        try:
-                                            ideal_angles = await corrector.get_ideal_angles(pose_name, landmarks)
-                                            fixed_ideal_angles = ideal_angles
-                                            ideal_angles_selected = True
-                                            last_frame_for_feedback = landmarks.copy()
-                                        except Exception as e:
-                                            logger.error(f"Error getting ideal angles: {str(e)}")
-                                            ideal_angles_selected = False
+                                # Get ideal angles only once
+                                if not ideal_angles_selected:
+                                    try:
+                                        ideal_angles = await corrector.get_ideal_angles(pose_name, landmarks)
+                                        fixed_ideal_angles = ideal_angles
+                                        ideal_angles_selected = True
+                                        last_frame_for_feedback = landmarks.copy()
+                                    except Exception as e:
+                                        logger.error(f"Error getting ideal angles: {str(e)}")
+                                        ideal_angles_selected = False
                                 
                                 # Calculate angles and errors only after view is classified
-                                if view_classified and ideal_angles_selected:
+                                if ideal_angles_selected:
                                     try:
                                         angles = corrector.calculate_pose_angles(landmarks)
                                         errors = corrector.calculate_error(angles, fixed_ideal_angles)
@@ -411,10 +401,8 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                         "pose_name": pose_name,
                                         "landmarks": landmarks,
                                         "corrections": corrector.generate_feedback(landmarks),
-                                        "detected_pose": corrector.current_pose,
-                                        "detected_view": corrector.current_view,
                                         "idealAngles": fixed_ideal_angles,
-                                        "errors": errors if view_classified and ideal_angles_selected else None,
+                                        "errors": errors if ideal_angles_selected else None,
                                         "stable_points": stable_points,
                                         "stable_time": stable_time,
                                         "is_stable": stable_time >= stability_threshold
