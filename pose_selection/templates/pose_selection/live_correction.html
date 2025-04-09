@@ -183,42 +183,71 @@
         padding: 20px;
         margin-top: 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 
     .correction-panel h4 {
         color: #8B694D;
-        margin-bottom: 20px;
-    }
-
-    .corrections-list {
-        max-height: 300px;
-        overflow-y: auto;
+        margin: 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #8B694D;
     }
 
     .correction-item {
-        margin: 10px 0;
+        background-color: rgba(139, 105, 77, 0.1);
         padding: 12px;
         border-radius: 8px;
-        background-color: rgba(229, 62, 62, 0.2);
-        transition: all 0.3s ease;
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
-    .correction-item:hover {
-        background-color: rgba(229, 62, 62, 0.3);
-        transform: translateX(5px);
+    .correction-item.high-error {
+        background-color: rgba(229, 62, 62, 0.1);
+        border-left: 4px solid #e53e3e;
     }
 
-    .no-corrections {
-        text-align: center;
-        padding: 30px;
-        background-color: rgba(72, 187, 120, 0.2);
+    .correction-item .angle-name {
+        font-weight: 500;
+        color: #8B694D;
+    }
+
+    .correction-item .error-value {
+        font-weight: bold;
+        color: #e53e3e;
+    }
+
+    .correction-item .feedback-text {
+        flex: 1;
+        color: #E8E2D0;
+    }
+
+    /* Error Summary */
+    .error-summary {
+        background-color: rgba(139, 105, 77, 0.2);
+        padding: 15px;
         border-radius: 8px;
+        margin-bottom: 15px;
     }
 
-    .checkmark {
-        font-size: 24px;
-        color: #48bb78;
-        margin-right: 10px;
+    .error-summary h5 {
+        color: #8B694D;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+    }
+
+    .error-summary .highest-error {
+        font-weight: bold;
+        color: #e53e3e;
+        font-size: 18px;
+    }
+
+    .error-summary .error-details {
+        color: #E8E2D0;
+        margin-top: 10px;
     }
 
     /* Profile Photo Modal */
@@ -387,12 +416,18 @@
     </div>
 
     <div class="correction-panel">
-        <h4>Corrections Needed</h4>
-        <div id="corrections" class="corrections-list">
-            <div id="noCorrections" class="no-corrections" style="display: none;">
-                <span class="checkmark">✓</span>
-                <span class="feedback-text">Great job! Your alignment is excellent.</span>
-            </div>
+        <h4>Real-time Corrections</h4>
+        <div class="error-summary" id="errorSummary">
+            <h5>Highest Error</h5>
+            <div class="highest-error" id="highestError">No errors detected</div>
+            <div class="error-details" id="errorDetails"></div>
+        </div>
+        <div class="corrections-list" id="correctionsList">
+            <!-- Corrections will be dynamically added here -->
+        </div>
+        <div id="poseInfo" class="mt-3">
+            <h5>Current Pose:</h5>
+            <div id="currentPose" class="text-white"></div>
         </div>
     </div>
 
@@ -449,7 +484,74 @@
                         if (typeof event.data === "string") {
                             const data = JSON.parse(event.data);
                             console.log("[INFO] Received pose correction data:", data);
-                            updateUI(data);
+                            
+                            // Update current pose
+                            const currentPose = document.getElementById('currentPose');
+                            if (currentPose && data.pose_name) {
+                                currentPose.textContent = data.pose_name;
+                            }
+
+                            // Update status
+                            const status = document.getElementById('status');
+                            if (status && data.is_stable !== undefined) {
+                                if (data.is_stable) {
+                                    status.textContent = 'Pose Stable - Ready for Corrections';
+                                    status.classList.remove('not-running');
+                                } else {
+                                    status.textContent = 'Waiting for Stable Pose...';
+                                    status.classList.add('not-running');
+                                }
+                            }
+
+                            // Update error summary
+                            const errorSummary = document.getElementById('errorSummary');
+                            const highestError = document.getElementById('highestError');
+                            const errorDetails = document.getElementById('errorDetails');
+
+                            if (errorSummary && highestError && errorDetails) {
+                                if (data.errors) {
+                                    // Find highest error
+                                    const highest = Object.entries(data.errors).reduce((max, [key, value]) => 
+                                        value.error > max.error ? {key, ...value} : max
+                                    , {error: -Infinity});
+
+                                    highestError.textContent = `${highest.key}: ${highest.error.toFixed(1)}° error`;
+                                    
+                                    // Format error details
+                                    const details = Object.entries(data.errors)
+                                        .map(([key, value]) => 
+                                            `${key}: ${value.error.toFixed(1)}° error (${value.actual.toFixed(1)}° vs ${value.target.toFixed(1)}°)`
+                                        )
+                                        .join('\n');
+                                    
+                                    errorDetails.textContent = details;
+                                } else {
+                                    highestError.textContent = 'No errors detected';
+                                    errorDetails.textContent = '';
+                                }
+                            }
+
+                            // Update corrections list
+                            const correctionsList = document.getElementById('correctionsList');
+                            if (correctionsList) {
+                                correctionsList.innerHTML = '';
+                                
+                                if (data.corrections && Array.isArray(data.corrections)) {
+                                    data.corrections.forEach(correction => {
+                                        const item = document.createElement('div');
+                                        item.className = `correction-item ${correction.is_high_error ? 'high-error' : ''}`;
+                                        
+                                        item.innerHTML = `
+                                            <span class="angle-name">${correction.angle_name}</span>
+                                            <span class="error-value">${correction.error.toFixed(1)}°</span>
+                                            <span class="feedback-text">${correction.feedback}</span>
+                                        `;
+                                        
+                                        correctionsList.appendChild(item);
+                                    });
+                                }
+                            }
+
                             return;
                         }
 
@@ -542,35 +644,6 @@
             document.getElementById('stopButton').style.display = 'none';
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function updateUI(data) {
-            // Update pose name
-            if (data.pose_name) {
-                document.getElementById('poseName').textContent = data.pose_name;
-            }
-
-            // Update view
-            if (data.detected_view) {
-                document.getElementById('viewName').textContent = data.detected_view;
-            }
-
-            // Clear corrections
-            const correctionsDiv = document.getElementById('corrections');
-            correctionsDiv.innerHTML = '';
-
-            // Update corrections
-            if (data.corrections && data.corrections.length > 0) {
-                data.corrections.forEach(correction => {
-                    const correctionItem = document.createElement('div');
-                    correctionItem.className = 'correction-item';
-                    correctionItem.textContent = correction;
-                    correctionsDiv.appendChild(correctionItem);
-                });
-                document.getElementById('noCorrections').style.display = 'none';
-            } else {
-                document.getElementById('noCorrections').style.display = 'flex';
-            }
         }
 
         async function checkServerStatus() {

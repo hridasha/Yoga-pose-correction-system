@@ -22,6 +22,12 @@ engine.setProperty('volume', 1)  # Set volume
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+class NumpyJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
+
 def shutdown_handler(signum, frame):
     logger.info("Shutting down server...")
     sys.exit(0)
@@ -187,7 +193,7 @@ async def process_frame(websocket: WebSocket):
                     "detected_view": detector.current_view,
                     "idealAngles": await detector.get_ideal_angles(detector.current_pose) if detector.current_pose else None,
                     "errors": detector.calculate_error(detector.calculate_pose_angles(),await detector.get_ideal_angles(detector.current_pose)) if detector.current_pose else None
-                }))
+                }, cls=NumpyJSONEncoder))
             # if not detected_pose or not detected_view:
             #     if detector.current_pose and detector.current_view:
             #         detected_pose = True
@@ -317,53 +323,63 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
 
                         if stable_points >= 7:  # 7 stable points required
                             stable_time += 1 / corrector.fps
+
                             if stable_time >= stability_threshold:
                                 logger.info(f"Pose Stable! Stable for {stable_time:.2f} seconds")
                                 
                                 # Store stable coordinates
                                 stable_coordinates = landmarks.copy()
                                 
-                                # Only classify view once when pose becomes stable
+                                # Only classify view once
                                 if not view_classified:
                                     view = corrector.classify_view(stable_coordinates)
                                     logger.info(f"View classified as: {view}")
                                     view_classified = True
+                                    
+                                    # Get ideal angles only once
+                                    if not ideal_angles_selected:
+                                        try:
+                                            ideal_angles = await corrector.get_ideal_angles(pose_name, landmarks)
+                                            fixed_ideal_angles = ideal_angles
+                                            ideal_angles_selected = True
+                                            last_frame_for_feedback = landmarks.copy()
+                                        except Exception as e:
+                                            logger.error(f"Error getting ideal angles: {str(e)}")
+                                            ideal_angles_selected = False
                                 
-                                # Calculate angles and errors
-                                angles = corrector.calculate_pose_angles(landmarks)
-                                ideal_angles = await corrector.get_ideal_angles(pose_name, landmarks)
-                                
-                                if not ideal_angles_selected:
-                                    fixed_ideal_angles = ideal_angles
-                                    ideal_angles_selected = True
-                                    last_frame_for_feedback = landmarks.copy()
-
-                                errors = corrector.calculate_error(angles, ideal_angles)
-                                
-                                # Check if we're in cooldown period
-                                current_time = time.time()
-                                if current_time - last_feedback_time > cooldown_duration:
-                                    if errors:
-                                        highest_error = max(errors.items(), key=lambda x: x[1]['error']) if errors else None
-                                        if highest_error:
-                                            angle_name = highest_error[0]
-                                            error_value = highest_error[1]['error']
-                                            
-                                            # Generate speech feedback
-                                            if 'Elbow' in angle_name:
-                                                speech_text = f"Bend your {angle_name} slightly. error with {error_value:.2f}"
-                                            else:
-                                                speech_text = f"Adjust your {angle_name} to be more closed. error with {error_value:.2f}"
-                                            
-                                            # Speak feedback and update last feedback time
-                                            engine.say(speech_text)
-                                            engine.runAndWait()
-                                            last_feedback_time = current_time
-                                            
-                                            # After first feedback, switch to lower processing rate
-                                            if not first_feedback_given:
-                                                feedback_interval = 100  # Process every 100 frames (about 0.3 FPS)
-                                                first_feedback_given = True
+                                # Calculate angles and errors only after view is classified
+                                if view_classified and ideal_angles_selected:
+                                    try:
+                                        angles = corrector.calculate_pose_angles(landmarks)
+                                        errors = corrector.calculate_error(angles, fixed_ideal_angles)
+                                        
+                                        # Check if we're in cooldown period
+                                        current_time = time.time()
+                                        if current_time - last_feedback_time > cooldown_duration:
+                                            if errors:
+                                                highest_error = max(errors.items(), key=lambda x: x[1]['error']) if errors else None
+                                                if highest_error:
+                                                    angle_name = highest_error[0]
+                                                    error_value = highest_error[1]['error']
+                                                    
+                                                    # Generate speech feedback
+                                                    if 'Elbow' in angle_name:
+                                                        speech_text = f"Bend your {angle_name} slightly. error with {error_value:.2f}"
+                                                    else:
+                                                        speech_text = f"Adjust your {angle_name} to be more closed. error with {error_value:.2f}"
+                                                    
+                                                    # Speak feedback and update last feedback time
+                                                    engine.say(speech_text)
+                                                    engine.runAndWait()
+                                                    last_feedback_time = current_time
+                                                    
+                                                    # After first feedback, switch to lower processing rate
+                                                    if not first_feedback_given:
+                                                        feedback_interval = 100  # Process every 100 frames (about 0.3 FPS)
+                                                        first_feedback_given = True
+                                    except Exception as e:
+                                        logger.error(f"Error calculating angles/errors: {str(e)}")
+                                        errors = None
                                 
                                 # Add stability information to frame
                                 cv2.putText(frame, f"Stable Points: {stable_points}/16", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
@@ -371,18 +387,21 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                 cv2.putText(frame, f"Pose: {pose_name}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
                                 
                                 # Send detailed information in websocket message
-                                await websocket.send_text(json.dumps({
-                                    "pose_name": pose_name,
-                                    "landmarks": landmarks,
-                                    "corrections": corrector.generate_feedback(landmarks),
-                                    "detected_pose": corrector.current_pose,
-                                    "detected_view": corrector.current_view,
-                                    "idealAngles": ideal_angles,
-                                    "errors": errors,
-                                    "stable_points": stable_points,
-                                    "stable_time": stable_time,
-                                    "is_stable": stable_time >= stability_threshold
-                                }))
+                                try:
+                                    await websocket.send_text(json.dumps({
+                                        "pose_name": pose_name,
+                                        "landmarks": landmarks,
+                                        "corrections": corrector.generate_feedback(landmarks),
+                                        "detected_pose": corrector.current_pose,
+                                        "detected_view": corrector.current_view,
+                                        "idealAngles": fixed_ideal_angles,
+                                        "errors": errors if view_classified and ideal_angles_selected else None,
+                                        "stable_points": stable_points,
+                                        "stable_time": stable_time,
+                                        "is_stable": stable_time >= stability_threshold
+                                    }, cls=NumpyJSONEncoder))
+                                except Exception as e:
+                                    logger.error(f"Error sending websocket message: {str(e)}")
                     
                     # Update previous landmarks
                     previous_landmarks = landmarks
