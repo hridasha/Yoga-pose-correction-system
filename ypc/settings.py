@@ -29,7 +29,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# https://txushbmxumdsgrjsaynx.supabase.co
 
+SUPABASE_URL = "https://txushbmxumdsgrjsaynx.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4dXNoYm14dW1kc2dyanNheW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyNzg0OTIsImV4cCI6MjA1OTg1NDQ5Mn0.IEwEUz4mKWpUjpif9rJmI_-l2Q1UDk_HZ5NWWtwxuWM"
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_API_KEY = os.getenv('SUPABASE_API_KEY')
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'ypc.urls'
@@ -175,6 +181,15 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Email configuration
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'hridashajoshi22@gnu.ac.in'  # Replace with your email
+# EMAIL_HOST_PASSWORD = 'ict@1234'  # Replace with your email password
+# DEFAULT_FROM_EMAIL = 'hridashajoshi22@gnu.ac.in'  # Replace with your email
 
 # # Template Settings
 # TEMPLATES[0]['DIRS'] = [BASE_DIR / 'templates']

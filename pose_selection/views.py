@@ -22,7 +22,7 @@ POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
 model = tf.keras.models.load_model(MODEL_PATH)
 with open(POSE_CLASSES_PATH, 'rb') as f:
     pose_classes = pickle.load(f)
-    print(f"Pose classes loaded: {pose_classes}")
+    # print(f"Pose classes loaded: {pose_classes}")
     
 landmark_names = [
     "NOSE", "LEFT_EYE", "RIGHT_EYE", "LEFT_EAR", "RIGHT_EAR",
@@ -809,6 +809,5 @@ def upload_image_for_pose(request):
                 'error': f'Error processing image: {str(e)}'
             })
 
-    # If not POST or no image, show the upload form
     print("=== Returning upload form ===")
     return render(request, 'pose_selection/upload_image_pose.html')
