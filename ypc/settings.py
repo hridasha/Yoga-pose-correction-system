@@ -90,14 +90,28 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ypcdb',           # your database name
+#         'USER': 'postgres',        # default pgAdmin user (unless you made a new one)
+#         'PASSWORD': 'root',  # replace with your actual password
+#         'HOST': 'localhost',
+#         'PORT': '5432',            # default port
+#     }
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ypcdb',           # your database name
-        'USER': 'postgres',        # default pgAdmin user (unless you made a new one)
-        'PASSWORD': 'root',  # replace with your actual password
-        'HOST': 'localhost',
-        'PORT': '5432',            # default port
+        'NAME': 'postgres',  # this is usually "postgres" for Supabase
+        'USER': 'postgres.txushbmxumdsgrjsaynx',
+        'PASSWORD': 'Hrida@9041',  # replace [YOUR-PASSWORD] with actual password
+        'HOST': 'aws-0-ap-south-1.pooler.supabase.com',
+        'PORT': '5432',
     }
 }
 
