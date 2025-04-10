@@ -129,7 +129,6 @@ pydantic-core==2.27.2
 pygments==2.19.1
 PyJWT==2.10.1
 pyparsing==3.2.1
-pypiwin32==223
 pytest==8.3.5
 pytest-mock==3.14.0
 python-dateutil==2.9.0.post0
