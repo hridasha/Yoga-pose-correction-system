@@ -391,12 +391,8 @@
             {% if pose.image %}
                 <img src="{{ pose.image.url }}" alt="{{ pose_name }} reference" class="reference-image">
             {% else %}
-                <div class="no-image-placeholder">
-                    <i class="fas fa-image"></i>
-                    <p>No reference</p>
-                </div>
+                <img src="{% static 'images/default_pose_image.jpg' %}" alt="Default Pose Image" class="reference-image">
             {% endif %}
-            <button class="camera-button" onclick="openModal()">&#128247;</button>
         </div>
     </div>
 
@@ -423,7 +419,7 @@
             <div class="error-details" id="errorDetails"></div>
         </div>
         <div class="corrections-list" id="correctionsList">
-            <!-- Corrections will be dynamically added here -->
+            <h5>Feedback</h5>
         </div>
         <div id="poseInfo" class="mt-3">
             <h5>Current Pose:</h5>
@@ -431,19 +427,6 @@
         </div>
     </div>
 
-    <!-- Profile Photo Modal -->
-    <div class="profile-photo-modal" id="photoModal">
-        <div class="photo-modal-content">
-            <div class="photo-modal-header">
-                <h3>Select Profile Photo</h3>
-                <button class="close-modal" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="photo-grid" id="photoGrid">
-                <!-- Photos will be populated by JavaScript -->
-            </div>
-            <button class="save-button" onclick="saveSelectedPhoto()">Save Selection</button>
-        </div>
-    </div>
 
     <script>
         const canvas = document.getElementById('videoCanvas');
@@ -452,6 +435,8 @@
         let isStreaming = false;
         const urlPath = window.location.pathname;
         const poseName = decodeURIComponent(urlPath.split("/")[2]);
+        const feedbackContainer = document.querySelector('.corrections-list');
+        const highestErrorContainer = document.querySelector('.highest-error');
 
         function initializeCanvas() {
             const container = document.querySelector('.video-container');
@@ -536,8 +521,8 @@
                             if (correctionsList) {
                                 correctionsList.innerHTML = '';
                                 
-                                if (data.corrections && Array.isArray(data.corrections)) {
-                                    data.corrections.forEach(correction => {
+                                if (data.correction && Array.isArray(data.correction)) {
+                                    data.correction.forEach(correction => {
                                         const item = document.createElement('div');
                                         item.className = `correction-item ${correction.is_high_error ? 'high-error' : ''}`;
                                         
@@ -667,67 +652,6 @@
         // Add event listeners immediately
         document.getElementById('startButton').addEventListener('click', startStream);
         document.getElementById('stopButton').addEventListener('click', stopStream);
-
-        // Sample profile photos (you should replace these with actual profile photos)
-        const profilePhotos = [
-            {% for photo in profile_photos %}
-            {
-                url: "{{ photo.url }}",
-                id: "{{ photo.id }}"
-            },
-            {% endfor %}
-        ];
-
-        function openModal() {
-            document.getElementById('photoModal').style.display = 'block';
-            populatePhotoGrid();
-        }
-
-        function closeModal() {
-            document.getElementById('photoModal').style.display = 'none';
-            clearSelection();
-        }
-
-        function populatePhotoGrid() {
-            const grid = document.getElementById('photoGrid');
-            grid.innerHTML = '';
-
-            profilePhotos.forEach(photo => {
-                const photoItem = document.createElement('div');
-                photoItem.className = 'photo-item';
-                photoItem.innerHTML = `<img src="${photo.url}" alt="Profile photo" data-id="${photo.id}">`;
-                photoItem.onclick = () => selectPhoto(photo.id);
-                grid.appendChild(photoItem);
-            });
-        }
-
-        function selectPhoto(photoId) {
-            const photos = document.querySelectorAll('.photo-item');
-            photos.forEach(photo => {
-                const img = photo.querySelector('img');
-                if (img.dataset.id === photoId) {
-                    photo.classList.add('selected');
-                } else {
-                    photo.classList.remove('selected');
-                }
-            });
-        }
-
-        function clearSelection() {
-            const photos = document.querySelectorAll('.photo-item');
-            photos.forEach(photo => photo.classList.remove('selected'));
-        }
-
-        function saveSelectedPhoto() {
-            const selectedPhoto = document.querySelector('.photo-item.selected');
-            if (selectedPhoto) {
-                const img = selectedPhoto.querySelector('img');
-                const photoId = img.dataset.id;
-                // Here you would typically make an AJAX call to save the selection
-                console.log('Selected photo:', photoId);
-                closeModal();
-            }
-        }
 
         // Close modal when clicking outside
         window.onclick = function(event) {

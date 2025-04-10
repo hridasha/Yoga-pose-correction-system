@@ -6,6 +6,7 @@ class CustomUser(AbstractUser):
     age = models.PositiveIntegerField(null=True, blank=True)
     email = models.EmailField(_('email address'), unique=True)
     date_joined = models.DateTimeField(auto_now_add=True)
+    profile_photo = models.CharField(max_length=255, default='images/profile1.png')
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

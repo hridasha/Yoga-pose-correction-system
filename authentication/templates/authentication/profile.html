@@ -214,24 +214,6 @@
         transition: background-color 0.3s ease;
     }
 
-    < !-- Reference Image Overlay -->.reference-overlay {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        width: 200px;
-        height: 200px;
-        border-radius: 12px;
-        background-color: rgba(43, 50, 65, 0.9);
-        padding: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 10;
-    }
-
-    .reference-overlay h4 {
-        color: #8B694D;
-        margin-bottom: 10px;
-        font-size: 14px;
-    }
 
     .reference-overlay .camera-button {
         position: absolute;
@@ -337,8 +319,13 @@
             <div class="profile-card h-100">
                 <div class="profile-info">
                     <div class="profile-avatar">
-                        <img src="{% static 'images/istockphoto-1459538299-612x612.webp' %}" alt="Profile"
+
+                        <img src="{% static user.profile_photo %}" alt="Profile"
                             class="rounded-circle border shadow-sm">
+                        <div class="reference-overlay">
+                            <button class="camera-button" onclick="openModal()">&#128247;</button>
+                        </div>
+
                     </div>
 
                     <h4 class="profile-name">{{ user.get_full_name }}</h4>
@@ -405,6 +392,8 @@
                                         value="{{ user.first_name }}" required placeholder="Enter your first name">
                                 </div>
                             </div>
+                            <input type="hidden" name="selected_photo" id="selectedPhotoInput">
+
 
                             <div class="col-md-6">
                                 <label class="form-label">Last Name</label>
@@ -443,6 +432,7 @@
     </div>
 </div>
 
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('profileForm');
@@ -455,14 +445,12 @@
             submitButton.disabled = true;
         });
     });
+
     const profilePhotos = [
-        {% for photo in profile_photos %}
-    {
-        url: "{{ photo.url }}",
-            id: "{{ photo.id }}"
-    },
-    {% endfor %}
-];
+        { url: "{% static 'images/profile1.png' %}", id: "1" },
+        { url: "{% static 'images/profile2.png' %}", id: "2" },
+        { url: "{% static 'images/profile3.png' %}", id: "3" }
+    ];
 
     function openModal() {
         document.getElementById('photoModal').style.display = 'block';
@@ -509,11 +497,24 @@
         if (selectedPhoto) {
             const img = selectedPhoto.querySelector('img');
             const photoId = img.dataset.id;
-            // Here you would typically make an AJAX call to save the selection
-            console.log('Selected photo:', photoId);
+
+            // Set hidden input
+            document.getElementById('selectedPhotoInput').value = photoId;
+
+            // Get the selected image URL
+            const selectedUrl = img.src;
+
+            // Update the profile avatar image immediately
+            const profileImg = document.querySelector('.profile-avatar img');
+            if (profileImg) {
+                profileImg.src = selectedUrl;
+            }
+
+            // Close modal
             closeModal();
         }
     }
+
 
     // Close modal when clicking outside
     window.onclick = function (event) {

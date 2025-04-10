@@ -10,9 +10,9 @@
 </div>
 
 <!-- Featured Yoga Poses Section -->
-<div class="container mt-5">
+<div class="container mt-5 ">
     <h2 class="section-title text-center mb-4">Featured Yoga Poses</h2>
-    <div class="row g-4">
+    <div class="row g-4  justify-content-center">
         {% for pose in featured_poses %}
         <div class="col-md-3">
             <div class="card h-100 shadow-sm">
@@ -21,7 +21,7 @@
                 {% else %}
                 <img src="{% static 'images/default_pose.jpg' %}" class="card-img-top" alt="{{ pose.pose_name }}" style="height: 200px; object-fit: cover;">
                 {% endif %}
-                <div class="card-body">
+                <div class="card-body text-center">
                     <h5 class="card-title">{{ pose.pose_name }}</h5>
                     <h6 class="text-muted">{{ pose.english_name }}</h6>
                     <p class="card-text">{{ pose.benefits|truncatechars:100 }}</p>
@@ -40,10 +40,10 @@
 
 <!-- Feature Cards -->
 <div class="container">
-    <div class="row g-4">
+    <div class="row g-4 justify-content-center mt-5 mb-5">
         <!-- Upload & Analyze -->
         <div class="col-md-6">
-            <div class="feature-card upload-card p-4">
+            <div class="feature-card upload-card p-4 text-center">
                 <h4 class="fw-bold"><i class="fas fa-upload me-2"></i> Upload & Analyze</h4>
                 <p>Upload your yoga poses and get instant AI-powered feedback.</p>
                 <p class="text-success small">● Ready to analyze</p>
@@ -53,7 +53,7 @@
 
         <!-- Real-time Session -->
         <div class="col-md-6">
-            <div class="feature-card realtime-card p-4">
+            <div class="feature-card realtime-card p-4 text-center">
                 <h4 class="fw-bold"><i class="fas fa-video me-2"></i> Real-time Session</h4>
                 <p>Get live pose correction and guidance through your camera.</p>
                 <p class="text-danger small">● Camera inactive</p>

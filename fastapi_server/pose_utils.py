@@ -1237,8 +1237,7 @@ class PoseDetector:
 
                 if elapsed >= 5:
                     print("\n[INFO] Generating feedback after 5 seconds...")
-                    self.feedback_timer_start = time.time()  # Reset for next feedback round
-
+                    self.feedback_timer_start = time.time() 
                     if self.last_frame_for_feedback:
                         angles = self.calculate_pose_angles()
                         if self.fixed_ideal_angles:

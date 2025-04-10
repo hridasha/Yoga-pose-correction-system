@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yoga Pose Analysis</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .pose-info {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ANALYZE POSE View</h1>
+        
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% else %}
+            <div class="image-container">
+                <h2>Original Image</h2>
+                <img src="{{ image_name|add:'uploads/'|add:'/' }}" alt="Original Image" style="max-width: 100%;">
+            </div>
+
+            <div class="image-container">
+                <h2>Annotated Image</h2>
+                <img src="{{ annotated_image_name|add:'uploads/'|add:'/' }}" alt="Annotated Image" style="max-width: 100%;">
+            </div>
+
+            <div class="pose-info">
+                <h2>Pose Analysis</h2>
+                <p>Predicted Pose: <strong>{{ predicted_pose }}</strong></p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

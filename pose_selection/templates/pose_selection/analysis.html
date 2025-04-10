@@ -3,307 +3,169 @@
 
 {% block content %}
 <style>
-    .analysis-container {
+    body {
         background-color: #E8E2D0;
-        padding: 2rem 0;
-        border-radius: 20px;
     }
 
-    .pose-image {
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s ease;
-        overflow: hidden;
-        margin-bottom: 1.5rem;
+    .card {
+        background-color: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
-    .pose-image:hover {
-        transform: scale(1.02);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    .card-body {
+        color: #2B3241;
     }
 
-    .analysis-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease;
-        margin-bottom: 1.5rem;
+    .h5,
+    .font-weight-bold {
+        color: #2B3241;
     }
 
-    .analysis-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    .suggested-corrections ul {
+        list-style-type: decimal;
+        padding-left: 20px;
+        color: #2B3241;
     }
 
-    .analysis-card .card-body {
-        padding: 1.5rem;
-    }
-
-    .angle-table {
-        background: white;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .angle-table th {
+    .table th {
         background-color: #2B3241;
         color: white;
-        padding: 1rem;
-        font-weight: 600;
     }
 
-    .angle-table td {
-        vertical-align: middle;
-        padding: 1rem;
-        font-size: 0.95rem;
-    }
-
-    .angle-table tr:nth-child(even) {
-        background: #f8f9fa;
-    }
-
-    .correction-list {
-        padding: 1.5rem;
-    }
-
-    .correction-item {
-        padding: 1rem;
-        border-bottom: 1px solid #e9ecef;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .correction-item:last-child {
-        border-bottom: none;
-    }
-
-    .correction-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: #4CAF50;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-    }
-
-    .action-buttons {
-        margin-top: 2rem;
-        text-align: center;
-        gap: 1rem;
-    }
-
-    .btn-primary, .btn-secondary {
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.2s ease;
+    .table td {
+        color: #2B3241;
     }
 
     .btn-primary {
         background-color: #2B3241;
-        color: white;
+        border: none;
     }
 
     .btn-primary:hover {
         background-color: #1a222d;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .btn-secondary {
         background-color: #8B694D;
-        color: white;
+        border: none;
     }
 
     .btn-secondary:hover {
         background-color: #725239;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .error-bar {
         height: 6px;
-        background: #f8f9fa;
+        background: #f1f1f1;
         border-radius: 3px;
-        margin: 0.5rem 0;
+        margin-top: 4px;
     }
 
     .error-bar-fill {
         height: 100%;
         background: #ff6b6b;
         border-radius: 3px;
-        transition: width 0.3s ease;
-    }
-
-    .angle-value {
-        font-weight: 500;
-    }
-
-    .text-success {
-        color: #4CAF50 !important;
-    }
-
-    .text-danger {
-        color: #ff6b6b !important;
-    }
-
-    .text-warning {
-        color: #FF9800 !important;
-    }
-
-    .text-muted {
-        color: #6c757d !important;
-    }
-
-    .text-primary {
-        color: #0d6efd !important;
-    }
-
-    .text-white {
-        color: white !important;
     }
 </style>
 
-<div class="container py-4">
-    <div class="analysis-container">
-        <!-- Title Section -->
-
-
-        <!-- Pose Image Section -->
-        <div class="text-center mb-4">
-            <div class="pose-image">
-                <img src="{{ feedback.image_url }}" alt="Annotated Pose" class="img-fluid rounded-4 shadow-sm" style="max-width: 700px; height: auto;">
+<div class="container-fluid p-4">
+    <div class="row">
+        <!-- Pose Image -->
+        <div class="col-md-6 d-flex align-items-center justify-content-center mb-4 mb-md-0">
+            <div class="w-100" style="max-height: auto; width:auto; overflow: hidden;">
+                <img src="{{ feedback.image_url }}" alt="Pose Image" class="img-fluid rounded shadow w-100 h-100"
+                    style="object-fit: contain;">
             </div>
-            <p class="text-muted small mt-2">Detected Pose with Keypoints</p>
         </div>
 
-        <!-- Analysis Summary -->
-        <div class="row g-4 mb-4">
-            <!-- Pose Info -->
-            <div class="col-lg-6">
-                <div class="analysis-card bg-white">
-                    <div class="card-body">
-                        <h4 class="card-title fw-semibold mb-3" style="color: #2B3241;">{{ feedback.pose_name }}</h4>
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="text-muted me-2">View:</span>
-                            <span class="badge bg-success">{{ feedback.classified_view }}</span>
+        <!-- Pose Feedback -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <!-- Header Info -->
+                    <div class="d-flex justify-content-between mb-4">
+                        <div>
+                            <p class="text-muted mb-1">Pose Name</p>
+                            <p class="h5 font-weight-bold">{{ feedback.pose_name }}</p>
                         </div>
-                        
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="text-muted me-3">Best Match:</span>
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-check-circle text-success me-2" style="font-size: 0.9rem;"></i>
-                                    <span class="fw-bold" style="font-size: 1.1rem;
-                                        {% if feedback.best_match == 'Original Pose' %} color: #4CAF50;
-                                        {% else %} color: #FF9800; {% endif %}">
-                                        {{ feedback.best_match }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center">
-                            <span class="text-muted me-3">Average Error:</span>
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center">
-                                    <span class="text-danger fw-bold" style="font-size: 1.2rem;">{{ feedback.avg_error }}°</span>
-                                    <div class="error-bar ms-3" style="width: 100%;">
-                                        <div class="error-bar-fill" style="width: {{ feedback.avg_error }}%;"></div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div>
+                            <p class="text-muted mb-1">View</p>
+                            <p class="h5 font-weight-bold">{{ feedback.view }}</p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Corrections -->
-            <div class="col-lg-6">
-                <div class="analysis-card bg-white">
-                    <div class="card-header text-white" style="background-color: #2B3241;">
-                        <h5 class="mb-0">Pose Correction Suggestions</h5>
+                    <div class="d-flex justify-content-between mb-4">
+                        <div>
+                            <p class="text-muted mb-1">Best Match</p>
+                            <p class="h5 font-weight-bold">{{ feedback.best_match }}</p>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1">Average Error</p>
+                            <p class="h5 font-weight-bold text-danger">{{ feedback.avg_error }}°</p>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="correction-list">
+
+                    <!-- Corrections -->
+                    <div class="suggested-corrections mb-4">
+                        <p class="h5 font-weight-bold mb-2">Suggested Corrections</p>
+                        {% if feedback.corrections %}
+                        <ul>
                             {% for correction in feedback.corrections %}
-                            <div class="correction-item">
-                                <div class="correction-icon">
-                                    <i class="fas fa-arrow-up"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <p class="mb-0" style="color: #2B3241; font-size: 0.95rem;">{{ correction }}</p>
-                                </div>
-                            </div>
-                            {% empty %}
-                            <div class="text-center py-3">
-                                <i class="fas fa-check-circle text-success mb-2" style="font-size: 1.5rem;"></i>
-                                <p class="text-success mb-0">Perfect Form! No corrections needed.</p>
-                            </div>
+                            <li>{{ correction }}</li>
                             {% endfor %}
-                        </div>
+                        </ul>
+                        {% else %}
+                        <p class="text-success"><i class="fas fa-check-circle"></i> Perfect Form! No corrections
+                            needed.</p>
+                        {% endif %}
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Angle Error Table -->
-        <div class="analysis-card bg-white mb-4">
-            <div class="card-header text-white" style="background-color: #2B3241;">
-                <h5 class="mb-0">Angle Error Details</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0 angle-table">
-                        <thead>
-                            <tr>
-                                <th>Angle</th>
-                                <th>Detected (°)</th>
-                                <th>Ideal (°)</th>
-                                <th>Error (°)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for angle, details in feedback.errors.items %}
-                            <tr>
-                                <td class="angle-value" style="color: #8B694D;">{{ angle }}</td>
-                                <td class="text-primary angle-value">{{ details.detected }}°</td>
-                                <td class="text-success angle-value">{{ details.ideal }}°</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <span class="text-danger angle-value me-2">{{ details.error }}°</span>
-                                        <div class="error-bar" style="width: 100%;">
+                    <!-- Angle Table -->
+                    <div>
+                        <p class="h5 font-weight-bold mb-2">Detailed Analysis</p>
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Angle</th>
+                                    <th>Target</th>
+                                    <th>Actual</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for angle, details in feedback.errors.items %}
+                                <tr>
+                                    <td>{{ angle }}</td>
+                                    <td>{{ details.ideal }}°</td>
+                                    <td>{{ details.detected }}°</td>
+                                    <td>
+                                        <span class="text-danger">{{ details.error }}°</span>
+                                        <div class="error-bar">
                                             <div class="error-bar-fill" style="width: {{ details.error }}%;"></div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'yoga_details' pose_name=feedback.pose_name %}"
+                            class="btn btn-secondary">Back</a>
+                        <a href="{% url 'upload_image' pose_name=feedback.pose_name %}" class="btn btn-primary">Try
+                            Again</a>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <a href="{% url 'yoga_details' pose_name=feedback.pose_name %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Details
-            </a>
-            <a href="{% url 'upload_image' pose_name=feedback.pose_name %}" class="btn btn-primary">
-                <i class="fas fa-redo-alt me-2"></i>Try Again
-            </a>
         </div>
     </div>
 </div>
 
 <script>
-    // Add smooth scroll for the error bars
+    // Animate error bar fill
     document.querySelectorAll('.error-bar-fill').forEach(bar => {
         const width = bar.style.width;
         bar.style.width = '0%';

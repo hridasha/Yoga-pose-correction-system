@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Upload Yoga Pose Image{% endblock %}
+
+{% block content %}
+<style>
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #E8E2D0;
+        border-radius: 1rem;
+        box-shadow: 0 4px 10px rgba(43, 50, 65, 0.2);
+    }
+
+    h1, h2, h3 {
+        color: #2B3241;
+    }
+
+    .upload-form {
+        background-color: #ffffff;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #B0A18B;
+        margin-bottom: 2rem;
+    }
+
+    .upload-form input[type="file"] {
+        display: none;
+    }
+
+    .upload-form button {
+        background-color: #2B3241;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+    }
+
+    .upload-form button:hover {
+        background-color: #8B694D;
+    }
+
+    .drop-zone {
+        text-align: center;
+        border: 2px dashed #B0A18B;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+        background-color: #fdfaf3;
+    }
+
+    .drop-zone.dragover {
+        background-color: #f2ede1;
+        border-color: #8B694D;
+    }
+
+    .loading {
+        text-align: center;
+        color: #8B694D;
+        margin: 1rem 0;
+        display: none;
+    }
+
+    .toast {
+        background-color: #2B3241;
+        color: #fff;
+        padding: 0.8rem 1.2rem;
+        border-radius: 0.5rem;
+        margin: 1rem auto;
+        text-align: center;
+        width: fit-content;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    }
+
+    .toast.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .error-message {
+        display: none;
+        color: #B00020;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+
+    .analysis-results {
+        margin-top: 2rem;
+        display: none;
+        padding: 1.5rem;
+        background-color: #ffffff;
+        border-radius: 1rem;
+        border: 1px solid #B0A18B;
+    }
+
+    .image-container img {
+        max-width: 100%;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .corrections, .errors {
+        margin-top: 1rem;
+        background-color: #f8f8f8;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .correction-item, .error-item {
+        background-color: #ffffff;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        margin-bottom: 0.5rem;
+        border-radius: 0.4rem;
+    }
+
+    .error-item span {
+        display: inline-block;
+        margin-left: 10px;
+    }
+</style>
+
+<div class="container">
+    <h1>Upload Yoga Pose Image to Analyze</h1>
+
+    <div class="upload-form">
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="drop-zone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                <h4>Drop image here</h4>
+                <p>or click to select</p>
+                <input type="file" name="image" id="imageInput" accept="image/*" onchange="previewImage(event)">
+                <button type="button" onclick="document.getElementById('imageInput').click()">
+                    <i class="fas fa-upload me-2"></i>Select Image
+                </button>
+            </div>
+            <button type="submit">Analyze Pose</button>
+        </form>
+    </div>
+
+    <div class="toast" id="uploadToast">Image selected. Ready to analyze!</div>
+    <div class="loading">Processing image... please wait.</div>
+    <div class="error-message"></div>
+
+    <div id="analysisResults" class="analysis-results">
+        <h2>Analysis Results</h2>
+
+
+        <div class="image-container">
+            <h3>Annotated Image</h3>
+            <img id="annotatedImage" src="" alt="Annotated Pose Image">
+        </div>
+
+        <div class="pose-info">
+            <h3>Pose Analysis</h3>
+            <p>Predicted Pose: <strong id="predictedPose"></strong></p>
+            <p>View Classification: <strong id="viewClassification"></strong></p>
+            <p>Best Match: <strong id="bestMatch"></strong></p>
+            <p>Average Error: <strong id="avgError"></strong></p>
+        </div>
+
+        <div class="corrections">
+            <h3>Corrections</h3>
+            <div id="correctionsList"></div>
+        </div>
+
+        <div class="errors">
+            <h3>Detailed Errors</h3>
+            <div id="errorsList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleDragOver(event) {
+        event.preventDefault();
+        document.querySelector('.drop-zone').classList.add('dragover');
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        document.querySelector('.drop-zone').classList.remove('dragover');
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            document.getElementById('imageInput').files = files;
+            previewImage({ target: { files } });
+        }
+    }
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('originalImage').src = e.target.result;
+
+                // Show toast
+                const toast = document.getElementById('uploadToast');
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const loadingDiv = document.querySelector('.loading');
+        const resultsDiv = document.getElementById('analysisResults');
+        const errorDiv = document.querySelector('.error-message');
+
+        loadingDiv.style.display = 'block';
+        resultsDiv.style.display = 'none';
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                errorDiv.textContent = data.error;
+                errorDiv.style.display = 'block';
+            } else {
+                document.getElementById('originalImage').src = data.image_url;
+                document.getElementById('annotatedImage').src = data.annotated_image_url;
+                document.getElementById('predictedPose').textContent = data.predicted_pose;
+                document.getElementById('viewClassification').textContent = data.view;
+                document.getElementById('bestMatch').textContent = data.best_match;
+                document.getElementById('avgError').textContent = data.avg_error;
+
+                document.getElementById('correctionsList').innerHTML = data.corrections.map(correction =>
+                    `<div class="correction-item">${correction}</div>`
+                ).join('');
+
+                const errorsList = document.getElementById('errorsList');
+                errorsList.innerHTML = Object.entries(data.errors).map(([joint, error]) => `
+                    <div class="error-item">
+                        <strong>${joint.replace('_', ' ')}:</strong>
+                        <span>Error: ${error.error.toFixed(1)}°</span>
+                        <span>Direction: ${error.direction}</span>
+                    </div>
+                `).join('');
+
+                resultsDiv.style.display = 'block';
+                resultsDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+        } catch (error) {
+            errorDiv.textContent = 'Error processing image: ' + error.message;
+            errorDiv.style.display = 'block';
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

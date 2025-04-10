@@ -1,6 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
-
 from fastapi.middleware.cors import CORSMiddleware
 import cv2
 import asyncio
@@ -389,18 +388,11 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                     except Exception as e:
                                         logger.error(f"Error calculating angles/errors: {str(e)}")
                                         errors = None
-                                
-                                # Add stability information to frame
-                                cv2.putText(frame, f"Stable Points: {stable_points}/16", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                                cv2.putText(frame, f"Stable Time: {stable_time:.1f}s", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                                cv2.putText(frame, f"Pose: {pose_name}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                                
-                                # Send detailed information in websocket message
                                 try:
                                     await websocket.send_text(json.dumps({
                                         "pose_name": pose_name,
                                         "landmarks": landmarks,
-                                        "corrections": corrector.generate_feedback(landmarks),
+                                        "correction": corrector.generate_feedback(landmarks),
                                         "idealAngles": fixed_ideal_angles,
                                         "errors": errors if ideal_angles_selected else None,
                                         "stable_points": stable_points,
@@ -410,7 +402,6 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                 except Exception as e:
                                     logger.error(f"Error sending websocket message: {str(e)}")
                     
-                    # Update previous landmarks
                     previous_landmarks = landmarks
             
     finally:

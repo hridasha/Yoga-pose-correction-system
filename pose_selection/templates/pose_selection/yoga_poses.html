@@ -7,7 +7,7 @@
         background-color: #E8E2D0;
         padding: 3rem 2rem;
         border-radius: 20px;
-        max-width: 1300px;
+        max-width: 1600px;
         margin: 0 auto;
     }
 
@@ -177,6 +177,46 @@
             max-width: 100%;
         }
     }
+
+    @media (min-width: 576px) {
+
+        .container,
+        .container-sm {
+            max-width: 1000px !important;
+        }
+    }
+
+    @media (min-width: 768px) {
+
+        .container,
+        .container-md {
+            max-width: 1100px !important;
+        }
+    }
+
+    @media (min-width: 992px) {
+
+        .container,
+        .container-lg {
+            max-width: 1200px !important;
+        }
+    }
+
+    @media (min-width: 1200px) {
+
+        .container,
+        .container-xl {
+            max-width: 1400px !important;
+        }
+    }
+
+    @media (min-width: 1400px) {
+
+        .container,
+        .container-xxl {
+            max-width: 1600px !important;
+        }
+    }
 </style>
 
 <div class="container-fluid py-5">
@@ -200,12 +240,20 @@
                 <div class="card h-100">
                     <div class="position-relative">
                         {% if pose.image %}
-                        <img src="{{ pose.image.url }}" class="card-img-top" alt="{{ pose.pose_name }} image">
+                        <img src="{{ pose.image.url }}" class="card-img-top" style="height:350px ; width :100% ;" alt="{{ pose.pose_name }} image">
                         {% else %}
                         <img src="{% static 'pose_selection/images/default_pose.jpg' %}" class="card-img-top"
                             alt="Default Pose Image">
                         {% endif %}
                         {% if pose.level == "Beginner" %}
+                        <span class="level-badge level-{{ pose.level|lower }}">
+                            {{ pose.level }}
+                        </span>
+                        {% elif pose.level == "Intermediate" %}
+                        <span class="level-badge level-{{ pose.level|lower }}">
+                            {{ pose.level }}
+                        </span>
+                        {% elif pose.level == "Advanced" %}
                         <span class="level-badge level-{{ pose.level|lower }}">
                             {{ pose.level }}
                         </span>

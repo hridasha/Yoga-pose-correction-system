@@ -92,6 +92,20 @@ def custom_login(request):
     })
 
 
+# @login_required
+# def profile(request):
+#     if request.method == 'POST':
+#         user = request.user
+#         user.first_name = request.POST.get('first_name', '')
+#         user.last_name = request.POST.get('last_name', '')
+#         user.age = request.POST.get('age', '')
+#         user.save()
+#         messages.success(request, 'Profile updated successfully!')
+#         return redirect('profile')
+
+    
+#     return render(request, 'authentication/profile.html', {'user': request.user})
+
 @login_required
 def profile(request):
     if request.method == 'POST':
@@ -99,11 +113,20 @@ def profile(request):
         user.first_name = request.POST.get('first_name', '')
         user.last_name = request.POST.get('last_name', '')
         user.age = request.POST.get('age', '')
+
+        # Get selected photo ID from form
+        selected_photo_id = request.POST.get('selected_photo')
+        if selected_photo_id:
+            user.profile_photo = f'images/profile{selected_photo_id}.png'  # Adjust path as needed
+
         user.save()
         messages.success(request, 'Profile updated successfully!')
         return redirect('profile')
-    
+
     return render(request, 'authentication/profile.html', {'user': request.user})
+
+
+
 @login_required
 def logout_view(request):
     logout(request)
