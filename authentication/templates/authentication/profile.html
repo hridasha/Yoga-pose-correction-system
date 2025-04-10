@@ -510,6 +510,28 @@
                 profileImg.src = selectedUrl;
             }
 
+            // Make AJAX call to update profile photo
+            fetch('{% url "update_profile_photo" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ photo_id: photoId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Photo update was successful
+                    console.log('Profile photo updated successfully');
+                } else {
+                    console.error('Failed to update profile photo');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
             // Close modal
             closeModal();
         }

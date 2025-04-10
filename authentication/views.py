@@ -14,6 +14,7 @@ from django.contrib.auth import views as auth_views
 from .forms import RegisterForm, LoginForm, PasswordChangeForm
 from .models import CustomUser
 import os
+import json
 
 # def register(request):
 #     if request.method == 'POST':
@@ -215,3 +216,20 @@ def password_reset_confirm(request, uidb64, token):
     else:
         messages.error(request, 'The reset password link is no longer valid.')
         return render(request, 'authentication/password_reset_confirm.html', {'validlink': False})
+
+@login_required
+def update_profile_photo(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            photo_id = data.get('photo_id')
+            
+            if photo_id:
+                request.user.profile_photo = f'images/profile{photo_id}.png'
+                request.user.save()
+                return JsonResponse({'success': True})
+            else:
+                return JsonResponse({'success': False, 'error': 'No photo ID provided'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
