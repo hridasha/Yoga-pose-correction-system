@@ -126,7 +126,7 @@ class PoseCorrection:
     def text_to_speech(self, text):
         """Convert text to speech."""
         engine = pyttsx3.init()
-        engine.setProperty('rate', 150)  # Adjust speech rate (words per minute)
+        engine.setProperty('rate', 150)  #words per minute
         engine.setProperty('volume', 1)  # Set volume level (0.0 to 1.0)
         engine.say(text)
         engine.runAndWait()
@@ -813,6 +813,130 @@ class PoseCorrection:
 
         return feedback
 
+
+
+    def process_feedback_queue(self, errors):
+        """Process errors and provide feedback based on highest errors."""
+        if not errors:
+            return
+
+        current_time = time.time()
+        
+        new_errors = {}
+        for angle_name, error in errors.items():
+            if not error['within_range']:
+                if angle_name not in self.error_tracking:
+                    self.error_tracking[angle_name] = {
+                        'error_sum': error['error'],
+                        'count': 1,
+                        'last_error': error['error'],
+                        'detected': error['actual'],
+                        'ideal': error['target'],
+                        'last_speech_time': 0
+                    }
+                else:
+                    self.error_tracking[angle_name]['error_sum'] += error['error']
+                    self.error_tracking[angle_name]['count'] += 1
+                    self.error_tracking[angle_name]['last_error'] = error['error']
+                    self.error_tracking[angle_name]['detected'] = error['actual']
+                    self.error_tracking[angle_name]['ideal'] = error['target']
+                new_errors[angle_name] = self.error_tracking[angle_name]
+
+        # Find top 3 joints with the highest average error
+        sorted_errors = sorted(
+            [(k, v) for k, v in new_errors.items()],
+            key=lambda x: x[1]['error_sum'] / x[1]['count'],
+            reverse=True
+        )
+
+        # Prepare simplified error dictionary for generate_feedback()
+        top_errors = {}
+        for angle_name, stats in sorted_errors[:1]:
+            top_errors[angle_name] = {
+                "error": stats['last_error'],
+                "detected": stats['detected'],
+                "ideal": stats['ideal']
+            }
+
+        # Generate feedback only for the top 3 highest errors
+        feedback = self.generate_feedback(top_errors)
+        
+        # Only speak feedback if enough time has passed since last speech
+        if not self.last_correction or (current_time - self.last_correction_time > self.feedback_cooldown):
+            # Update the last speech time for all tracked errors
+            for angle_name in self.error_tracking:
+                self.error_tracking[angle_name]['last_speech_time'] = current_time
+            
+            self.text_to_speech(feedback)
+            self.last_correction = feedback
+            self.last_correction_time = current_time
+        
+        # Print and send feedback only if new feedback exists
+        if top_errors:
+            self.feedback_queue = [
+                {
+                    'angle': joint,
+                    'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
+                    'last_error': self.error_tracking[joint]['last_error']
+                } for joint in top_errors
+            ]
+
+            # Raw Feedback Summary
+            print("\nPose Correction Feedback:")
+            for item in self.feedback_queue:
+                print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
+
+        # If all joints are within range, clear feedback and reset tracking
+        if all(error['within_range'] for error in errors.values()):
+            self.feedback_queue.clear()
+            self.error_tracking.clear()
+            print("\nPose is correct! No further corrections needed.")
+
+
+    def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, float]) -> Dict[str, float]:
+        """Calculate errors between calculated angles and ideal angles."""
+        if not angles or not ideal_angles:
+            return {}
+
+        errors = {}
+        for angle_name, angle_value in angles.items():
+            if angle_name in ideal_angles:
+                ideal = ideal_angles[angle_name]
+                target = ideal['mean']
+                min_angle = ideal['min']
+                max_angle = ideal['max']
+                
+                # Calculate error
+                error = abs(angle_value - target)
+                
+                # Check if angle is within range
+                within_range = min_angle <= angle_value <= max_angle
+                
+                errors[angle_name] = {
+                    'error': error,
+                    'within_range': within_range,
+                    'actual': angle_value,
+                    'target': target,
+                    'min': min_angle,
+                    'max': max_angle
+                }
+        
+        return errors
+
+    def calculate_fps(self):
+        """Dynamically calculate FPS based on frame time."""
+        current_time = time.time()
+        frame_time = current_time - self.last_time
+        self.last_time = current_time
+
+        if frame_time > 0:
+            self.fps = 1.0 / frame_time
+        else:
+            self.fps = 30.0
+        return self.fps
+    
+    
+    
     async def process_correction(self, frame: np.ndarray, pose_name: str) -> Dict[int, Tuple[float, float, float, float]]:
         """Process frame and return pose landmarks."""
         try:
@@ -971,125 +1095,3 @@ class PoseCorrection:
             print(f"\nERROR in process_correction: {str(e)}")
             return {}
 
-
-
-    def process_feedback_queue(self, errors):
-        """Process errors and provide feedback based on highest errors."""
-        if not errors:
-            return
-
-        current_time = time.time()
-        
-        new_errors = {}
-        for angle_name, error in errors.items():
-            if not error['within_range']:
-                if angle_name not in self.error_tracking:
-                    self.error_tracking[angle_name] = {
-                        'error_sum': error['error'],
-                        'count': 1,
-                        'last_error': error['error'],
-                        'detected': error['actual'],
-                        'ideal': error['target'],
-                        'last_speech_time': 0
-                    }
-                else:
-                    self.error_tracking[angle_name]['error_sum'] += error['error']
-                    self.error_tracking[angle_name]['count'] += 1
-                    self.error_tracking[angle_name]['last_error'] = error['error']
-                    self.error_tracking[angle_name]['detected'] = error['actual']
-                    self.error_tracking[angle_name]['ideal'] = error['target']
-                new_errors[angle_name] = self.error_tracking[angle_name]
-
-        # Find top 3 joints with the highest average error
-        sorted_errors = sorted(
-            [(k, v) for k, v in new_errors.items()],
-            key=lambda x: x[1]['error_sum'] / x[1]['count'],
-            reverse=True
-        )
-
-        # Prepare simplified error dictionary for generate_feedback()
-        top_errors = {}
-        for angle_name, stats in sorted_errors[:1]:
-            top_errors[angle_name] = {
-                "error": stats['last_error'],
-                "detected": stats['detected'],
-                "ideal": stats['ideal']
-            }
-
-        # Generate feedback only for the top 3 highest errors
-        feedback = self.generate_feedback(top_errors)
-        
-        # Only speak feedback if enough time has passed since last speech
-        if not self.last_correction or (current_time - self.last_correction_time > self.feedback_cooldown):
-            # Update the last speech time for all tracked errors
-            for angle_name in self.error_tracking:
-                self.error_tracking[angle_name]['last_speech_time'] = current_time
-            
-            self.text_to_speech(feedback)
-            self.last_correction = feedback
-            self.last_correction_time = current_time
-        
-        # Print and send feedback only if new feedback exists
-        if top_errors:
-            self.feedback_queue = [
-                {
-                    'angle': joint,
-                    'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
-                    'last_error': self.error_tracking[joint]['last_error']
-                } for joint in top_errors
-            ]
-
-            # Raw Feedback Summary
-            print("\nPose Correction Feedback:")
-            for item in self.feedback_queue:
-                print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
-
-        # If all joints are within range, clear feedback and reset tracking
-        if all(error['within_range'] for error in errors.values()):
-            self.feedback_queue.clear()
-            self.error_tracking.clear()
-            print("\nPose is correct! No further corrections needed.")
-
-
-    def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, float]) -> Dict[str, float]:
-        """Calculate errors between calculated angles and ideal angles."""
-        if not angles or not ideal_angles:
-            return {}
-
-        errors = {}
-        for angle_name, angle_value in angles.items():
-            if angle_name in ideal_angles:
-                ideal = ideal_angles[angle_name]
-                target = ideal['mean']
-                min_angle = ideal['min']
-                max_angle = ideal['max']
-                
-                # Calculate error
-                error = abs(angle_value - target)
-                
-                # Check if angle is within range
-                within_range = min_angle <= angle_value <= max_angle
-                
-                errors[angle_name] = {
-                    'error': error,
-                    'within_range': within_range,
-                    'actual': angle_value,
-                    'target': target,
-                    'min': min_angle,
-                    'max': max_angle
-                }
-        
-        return errors
-
-    def calculate_fps(self):
-        """Dynamically calculate FPS based on frame time."""
-        current_time = time.time()
-        frame_time = current_time - self.last_time
-        self.last_time = current_time
-
-        if frame_time > 0:
-            self.fps = 1.0 / frame_time
-        else:
-            self.fps = 30.0
-
-        return self.fps

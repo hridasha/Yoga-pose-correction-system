@@ -19,6 +19,8 @@ import mediapipe as mp
 
 MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
 POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
+
+
 model = tf.keras.models.load_model(MODEL_PATH)
 with open(POSE_CLASSES_PATH, 'rb') as f:
     pose_classes = pickle.load(f)
@@ -62,6 +64,10 @@ def stop_stream(request):
     stop_fastapi_server()
     
     return JsonResponse({"status": "stopped"})
+
+
+
+
 
 def home(request):
     difficulty = request.GET.get('level', 'Beginner')
@@ -154,7 +160,7 @@ def upload_image(request, pose_name):
         image = request.FILES['image']
         image_name = f"{int(time.time())}-{image.name}"
         
-        # Save the image
+        # Save image
         with default_storage.open(f"uploads/{image_name}", 'wb+') as destination:
             for chunk in image.chunks():
                 destination.write(chunk)
@@ -163,8 +169,6 @@ def upload_image(request, pose_name):
         return HttpResponse(
             reverse('analyze_pose', kwargs={'pose_name': pose_name}) + f'?image_name={image_name}'
         )
-    
-    # For GET request, show the upload form
     return render(request, 'pose_selection/upload_image.html', {
         'pose_name': pose_name
     })
@@ -332,7 +336,7 @@ def yoga_views(request, pose_name):
         is_flipped=False
     ).values('view').distinct()
 
-    # Create URLs for each view
+    # Create urls for each view
     view_links = [
         {
             'view': view['view'],
@@ -343,24 +347,23 @@ def yoga_views(request, pose_name):
 
     context = {
         'pose_name': pose_name,
-        'view_links': view_links  # Send view links to the template
+        'view_links': view_links 
     }
     return render(request, 'pose_selection/yoga_views.html', context)
 
 
 
-def show_views(request, pose_name):
-    # Query distinct views for the selected pose
-    views = YogaPoseIdealAngle.objects.filter(
-        pose_name=pose_name,
-        is_flipped=False  # Exclude flipped poses
-    ).values('view').distinct()
+# def show_views(request, pose_name):
+#     views = YogaPoseIdealAngle.objects.filter(
+#         pose_name=pose_name,
+#         is_flipped=False 
+#     ).values('view').distinct()
 
-    context = {
-        'pose_name': pose_name,
-        'views': views
-    }
-    return render(request, 'pose_selection/show_views.html', context)
+#     context = {
+#         'pose_name': pose_name,
+#         'views': views
+#     }
+#     return render(request, 'pose_selection/show_views.html', context)
 
 
 
@@ -553,8 +556,9 @@ def analyze_pose(request, pose_name):
         print(f"Error in analyze_pose: {str(e)}")
         return JsonResponse({"error": f"An error occurred: {str(e)}"})
 
-def realtime_pose_base(request):
-    return render(request, 'pose_selection/realtime_pose.html')
+
+# def realtime_pose_base(request):
+#     return render(request, 'pose_selection/realtime_pose.html')
 
 
 
@@ -562,11 +566,10 @@ def realtime_pose_base(request):
 def yoga_details(request, pose_name):
     pose = YogaPoseDetails.objects.get(pose_name=pose_name)
     pose.benefits = pose.benefits.split(',')
-    
-    # Get related poses of the same level
+    #pose of same level
     related_poses = YogaPoseDetails.objects.filter(
         level=pose.level
-    ).exclude(pose_name=pose_name).order_by('pose_name')[:4]  # Get 4 related poses
+    ).exclude(pose_name=pose_name).order_by('pose_name')[:4]  
     
     context = {
         'pose': pose,
