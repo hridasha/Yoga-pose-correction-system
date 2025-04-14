@@ -1075,3 +1075,45 @@ class PoseCorrection:
             self.fps = 30.0
 
         return self.fps
+    def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
+        """
+        Calculate errors between calculated angles and ideal angles.
+        
+        Args:
+            angles: Dictionary of calculated angles
+            ideal_angles: Dictionary of ideal angles with mean, min, max values
+            
+        Returns:
+            Dictionary of angle errors with the following structure:
+            {
+                "angle_name": {
+                    "error": float,        # Difference between actual and target
+                    "actual": float,       # Actual angle value
+                    "target": float,       # Target angle value
+                    "min": float,          # Minimum acceptable angle
+                    "max": float,          # Maximum acceptable angle
+                    "within_range": bool   # Whether angle is within acceptable range
+                }
+            }
+        """
+        errors = {}
+        
+        if not angles or not ideal_angles:
+            return errors
+            
+        for angle_name, angle_value in angles.items():
+            if angle_name in ideal_angles:
+                ideal = ideal_angles[angle_name]
+                target = ideal['mean']
+                error = angle_value - target
+                
+                errors[angle_name] = {
+                    "error": error,
+                    "actual": angle_value,
+                    "target": target,
+                    "min": ideal['min'],
+                    "max": ideal['max'],
+                    "within_range": ideal['min'] <= angle_value <= ideal['max']
+                }
+        
+        return errors

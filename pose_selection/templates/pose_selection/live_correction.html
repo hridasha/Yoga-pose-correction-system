@@ -667,7 +667,6 @@
                                 }
                             }
 
-
                             // Update errors
                             const errorsList = document.getElementById('errorsList');
                             if (errorsList) {
@@ -700,16 +699,18 @@
 
                             if (errorSummary && highestError && errorDetails) {
                                 if (data.errors && Object.keys(data.errors).length > 0) {
+                                    // Find highest error
                                     const highest = Object.entries(data.errors).reduce(
                                         (max, [key, value]) =>
-                                            value.error > max.error ? { key, ...value } : max,
-                                        { error: -Infinity }
+                                            Math.abs(value.error) > Math.abs(max.error) ? { key, ...value } : max,
+                                        { error: 0 }
                                     );
 
                                     highestError.textContent = `${highest.key}: ${highest.error.toFixed(1)}° error`;
 
+                                    // Format error details
                                     const details = Object.entries(data.errors)
-                                        .map(([key, value]) =>
+                                        .map(([key, value]) => 
                                             `${key}: ${value.error.toFixed(1)}° error (${value.actual.toFixed(1)}° vs ${value.target.toFixed(1)}°)`
                                         )
                                         .join('\n');
@@ -739,6 +740,12 @@
                                 }
                             }
 
+                            // Update view classification
+                            const viewClassified = document.getElementById('currentView');
+                            if (viewClassified && data.view) {
+                                viewClassified.textContent = data.view;
+                            }
+
                             return;
                         }
 
@@ -746,37 +753,15 @@
                         const array = new Uint8Array(event.data);
                         const blob = new Blob([array], { type: 'image/jpeg' });
                         const url = URL.createObjectURL(blob);
-
-                        const img = new Image();
-                        img.onload = () => {
-                            ctx.fillStyle = 'black';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                            const aspectRatio = img.width / img.height;
-                            let drawWidth = canvas.width;
-                            let drawHeight = canvas.height;
-
-                            if (img.width > img.height) {
-                                drawHeight = canvas.width / aspectRatio;
-                            } else {
-                                drawWidth = canvas.height * aspectRatio;
-                            }
-
-                            const x = (canvas.width - drawWidth) / 2;
-                            const y = (canvas.height - drawHeight) / 2;
-
-                            ctx.drawImage(img, x, y, drawWidth, drawHeight);
-                            URL.revokeObjectURL(url);
+                        const image = new Image();
+                        image.onload = function() {
+                            const canvas = document.getElementById('videoCanvas');
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
                         };
-                        img.src = url;
-
+                        image.src = url;
                     } catch (error) {
                         console.error('Error processing WebSocket message:', error);
-                        ctx.fillStyle = 'black';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = 'red';
-                        ctx.font = '24px Arial';
-                        ctx.fillText('Error displaying video or feedback', 10, 50);
                     }
                 };
 
