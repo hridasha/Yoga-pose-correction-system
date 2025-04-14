@@ -21,8 +21,6 @@ engine.setProperty('volume', 1)  # Set volume
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-logging.getLogger("comtypes").setLevel(logging.WARNING)
-
 class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.bool_):
@@ -338,7 +336,7 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
 
             # Draw keypoints
             for idx, (x, y, z, conf) in landmarks.items():
-                if conf > 0:
+                if conf > 0.5:
                     cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
                     cv2.putText(frame, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
@@ -385,7 +383,6 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                         pause_time = current_time
                         last_frame_for_feedback = stable_coordinates.copy()
                         print(f"\n[INFO] Last frame for feedback: {last_frame_for_feedback}")
-                        print("----------------------------------------------------->Stable coordiantes", stable_coordinates)
 
                         # classify view once
                         if not view_classified:

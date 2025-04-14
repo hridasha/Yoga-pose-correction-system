@@ -14,7 +14,6 @@ from asgiref.sync import sync_to_async
 import time
 import logging
 import pyttsx3
-import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -123,13 +122,11 @@ class PoseCorrection:
         self.error_tracking = {}
         self.high_fps = True  
         self.view_classified = False  # Add this flag
-        self.in_adjustment_period = False
-        self.adjustment_start_time = 0
 
     def text_to_speech(self, text):
         """Convert text to speech."""
         engine = pyttsx3.init()
-        engine.setProperty('rate', 150)  #words per minute
+        engine.setProperty('rate', 150)  # Adjust speech rate (words per minute)
         engine.setProperty('volume', 1)  # Set volume level (0.0 to 1.0)
         engine.say(text)
         engine.runAndWait()
@@ -251,61 +248,17 @@ class PoseCorrection:
         Enhanced View Classification with more sub-categories based on keypoints' coordinates.
         """
         try:
-            required_keypoints = [0, 2, 5, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
-            confidence_threshold = 0.0000  # Lower threshold for confidence check
             
-            # Check if all required keypoints are present and have sufficient confidence
-            if not all(idx in stable_coordinates and stable_coordinates[idx][3] >= confidence_threshold 
-                       for idx in required_keypoints):
-                return "Partial Pose (Low Confidence Keypoints)"
-
-            # Get the coordinates for the specific keypoints
-            nose = stable_coordinates[0]
-            left_eye = stable_coordinates[2]
-            right_eye = stable_coordinates[5]
-            left_ear = stable_coordinates[7]
-            right_ear = stable_coordinates[8]
             left_shoulder = stable_coordinates[11]
             right_shoulder = stable_coordinates[12]
-            left_elbow = stable_coordinates[13]
-            right_elbow = stable_coordinates[14]
-            left_wrist = stable_coordinates[15]
-            right_wrist = stable_coordinates[16]
             left_hip = stable_coordinates[23]
             right_hip = stable_coordinates[24]
             left_knee = stable_coordinates[25]
             right_knee = stable_coordinates[26]
-            left_ankle = stable_coordinates[27]
-            right_ankle = stable_coordinates[28]
-
-            # Log confidence values for debugging
-            if self.needs_printing:
-                print("\nKeypoint Confidence:")
-                for idx in required_keypoints:
-                    print(f"{self.keypoints[idx]}: {stable_coordinates[idx][3]:.4f}")
-
-            # left_shoulder = stable_coordinates[11]
-            # right_shoulder = stable_coordinates[12]
-            # left_elbow = stable_coordinates[13]
-            # right_elbow = stable_coordinates[14]
-            # left_wrist = stable_coordinates[15]
-            # right_wrist = stable_coordinates[16]
-            # left_hip = stable_coordinates[23]
-            # right_hip = stable_coordinates[24]
-            # left_knee = stable_coordinates[25]
-            # right_knee = stable_coordinates[26]
-
-            
-            # left_shoulder = stable_coordinates[11]
-            # right_shoulder = stable_coordinates[12]
-            # left_hip = stable_coordinates[23]
-            # right_hip = stable_coordinates[24]
-            # left_knee = stable_coordinates[25]
-            # right_knee = stable_coordinates[26]
-            # left_wrist = stable_coordinates[15]
-            # right_wrist = stable_coordinates[16]
-            # left_elbow = stable_coordinates[13]
-            # right_elbow = stable_coordinates[14]
+            left_wrist = stable_coordinates[15]
+            right_wrist = stable_coordinates[16]
+            left_elbow = stable_coordinates[13]
+            right_elbow = stable_coordinates[14]
 
             # required_keypoints = [left_shoulder, right_shoulder, left_hip, right_hip, left_knee, right_knee, left_wrist, right_wrist, left_elbow, right_elbow]
             # if any(not kp for kp in required_keypoints):
@@ -399,16 +352,9 @@ class PoseCorrection:
         """Get ideal angles for a pose from the database and calculate errors."""
         try:
             if not pose_name or not landmarks:
-                print("No pose name or landmarks provided")
                 return {}
 
-            print(f"\nProcessing ideal angles for pose: {pose_name}")
-            
-            # Calculate current angles first
-            current_angles = self.calculate_pose_angles(landmarks)
-            if not current_angles:
-                print("No angles calculated for current pose")
-                return {}
+            from asgiref.sync import sync_to_async
 
             @sync_to_async
             def get_angles(pose_name, view, is_flipped):
@@ -418,11 +364,6 @@ class PoseCorrection:
                         view=view,
                         is_flipped=is_flipped
                     )
-                    print(f"Retrieved angles for view: {view} (Flipped={is_flipped})")
-                    print("Ideal Angles:")
-                    print(f"Left Elbow: Mean={angles.left_elbow_angle_mean:.1f}, Min={angles.left_elbow_angle_mean-10:.1f}, Max={angles.left_elbow_angle_mean+10:.1f}")
-                    print(f"Right Elbow: Mean={angles.right_elbow_angle_mean:.1f}, Min={angles.right_elbow_angle_mean-10:.1f}, Max={angles.right_elbow_angle_mean+10:.1f}")
-                    print("...")
                     return {
                         'Left_Elbow_Angle': {
                             'mean': angles.left_elbow_angle_mean,
@@ -434,86 +375,127 @@ class PoseCorrection:
                             'min': angles.right_elbow_angle_mean - 10,
                             'max': angles.right_elbow_angle_mean + 10
                         },
-                        # ... other angles
+                        'Left_Shoulder_Angle': {
+                            'mean': angles.left_shoulder_angle_mean,
+                            'min': angles.left_shoulder_angle_mean - 10,
+                            'max': angles.left_shoulder_angle_mean + 10
+                        },
+                        'Right_Shoulder_Angle': {
+                            'mean': angles.right_shoulder_angle_mean,
+                            'min': angles.right_shoulder_angle_mean - 10,
+                            'max': angles.right_shoulder_angle_mean + 10
+                        },
+                        'Left_Hip_Angle': {
+                            'mean': angles.left_hip_angle_mean,
+                            'min': angles.left_hip_angle_mean - 10,
+                            'max': angles.left_hip_angle_mean + 10
+                        },
+                        'Right_Hip_Angle': {
+                            'mean': angles.right_hip_angle_mean,
+                            'min': angles.right_hip_angle_mean - 10,
+                            'max': angles.right_hip_angle_mean + 10
+                        },
+                        'Left_Knee_Angle': {
+                            'mean': angles.left_knee_angle_mean,
+                            'min': angles.left_knee_angle_mean - 10,
+                            'max': angles.left_knee_angle_mean + 10
+                        },
+                        'Right_Knee_Angle': {
+                            'mean': angles.right_knee_angle_mean,
+                            'min': angles.right_knee_angle_mean - 10,
+                            'max': angles.right_knee_angle_mean + 10
+                        },
+                        'Left_Ankle_Angle': {
+                            'mean': angles.left_ankle_angle_mean,
+                            'min': angles.left_ankle_angle_mean - 10,
+                            'max': angles.left_ankle_angle_mean + 10
+                        },
+                        'Right_Ankle_Angle': {
+                            'mean': angles.right_ankle_angle_mean,
+                            'min': angles.right_ankle_angle_mean - 10,
+                            'max': angles.right_ankle_angle_mean + 10
+                        }
                     }
                 except YogaPoseIdealAngle.DoesNotExist:
-                    print(f"No ideal angles found for view: {view} (Flipped={is_flipped})")
                     return None
 
             @sync_to_async
             def get_all_views(pose_name):
                 try:
-                    views = list(YogaPoseIdealAngle.objects.filter(
+                    return list(YogaPoseIdealAngle.objects.filter(
                         pose_name=pose_name,
                         is_flipped=False
                     ).values_list('view', flat=True))
-                    print(f"Found {len(views)} views in database for pose: {pose_name}")
-                    return views
                 except Exception as e:
                     print(f"Error fetching all views: {e}")
                     return []
+            
+            #current psoe ang;es
+            current_angles = self.calculate_pose_angles(landmarks)
+            
+            if not current_angles:
+                print("No angles calculated for current pose")
+                return {}
 
-            # Get all possible views for this pose
+            # First try to get angles for the classified view
+            view = self.classify_view(self.stable_coordinates)
+            print(f"\nSearching for ideal angles for view: {view}")
+            
+            # Try both flipped and non-flipped versions
+            views_to_check = [(view, False), (view, True)]
+            
             all_views = await get_all_views(pose_name)
             
-            # If view is not classified yet, use the current view
-            if not self.current_view:
-                view = self.classify_view(self.stable_coordinates)
-                print(f"Initial view classification: {view}")
-            else:
-                view = self.current_view
-                print(f"Using current view classification: {view}")
-
-            # If view is rare or mixed, compare with all views
-            if view == "Rare or Mixed View":
-                print("View is rare/mixed - comparing with all views")
-                views_to_check = [(v, False) for v in all_views]  # Non-flipped views
-                views_to_check.extend([(v, True) for v in all_views])  # Flipped views
-            else:
-                print(f"Checking flipped and non-flipped versions of view: {view}")
-                views_to_check = [(view, False), (view, True)]
+            for v in all_views:
+                if v != view:  
+                    views_to_check.extend([(v, False), (v, True)])
 
             min_error = float('inf')
             best_view = None
             best_angles = None
+            best_errors = None
 
             for view_name, is_flipped in views_to_check:
                 try:
-                    print(f"\nChecking view: {view_name} (Flipped={is_flipped})")
                     # Get angles for this view
                     ideal_angles = await get_angles(pose_name, view_name, is_flipped)
                     
                     if ideal_angles:
                         # Calculate errors
                         errors = self.calculate_error(current_angles, ideal_angles)
-                        total_error = sum(error['error'] for error in errors.values())
-                        print(f"Error for view {view_name} (Flipped={is_flipped}): {total_error:.2f}")
                         
-                        # Print detailed errors
-                        print("Detailed Angle Errors:")
-                        for angle, error in errors.items():
-                            print(f"{angle}: Detected={error['actual']:.1f}°, Ideal={error['target']:.1f}°, Error={error['error']:.1f}°")
+                        # Calculate total error
+                        total_error = sum(error['error'] for error in errors.values())
                         
                         # Check if this is the best match
                         if total_error < min_error:
                             min_error = total_error
                             best_view = f"{view_name} (Flipped={is_flipped})"
                             best_angles = ideal_angles
-                            print(f"New best view found: {best_view} with error: {min_error:.2f}")
+                            best_errors = errors
+                        
+                        print("="*50)
+                        print(f"\nView: {view_name} (Flipped={is_flipped})")
+                        print(f"Total Error: {total_error:.2f}")
+                        print("Angle Errors:")
+                        for angle, error in errors.items():
+                            print(f"{angle}: Detected={error['detected']:.2f}°, Ideal={error['ideal']:.2f}°, Error={error['error']:.2f}°")
+                        print("="*50)
                 except Exception as e:
                     print(f"Error processing view {view_name}: {e}")
                     continue
 
             if best_angles:
-                print(f"\nBest matching view found: {best_view} with error: {min_error:.2f}")
-                print("Final Ideal Angles:")
-                for angle, ideal in best_angles.items():
-                    print(f"{angle}: Target={ideal['mean']:.1f}, Min={ideal['min']:.1f}, Max={ideal['max']:.1f}")
-                
-                # Update current view if it was rare/mixed and we found a better match
-                if self.current_view == "Rare or Mixed View":
-                    self.current_view = best_view
-                    print(f"Updated view classification to: {best_view}")
+                print("="*50)
+                print(f"\nBest Matching View: {best_view}")
+                print(f"Total Error: {min_error:.2f}")
+                print("\nBest Angle Errors:")
+                for angle, error in best_errors.items():
+                    print(f"{angle}: Detected={error['detected']:.2f}°, Ideal={error['ideal']:.2f}°, Error={error['error']:.2f}°")
+                print("="*50)
+                feedback = self.generate_feedback(best_errors)
+                print("\nAdjustment Feedback:")
+                print(feedback)
                 
                 return best_angles
             else:
@@ -521,10 +503,10 @@ class PoseCorrection:
                 return {}
 
         except Exception as e:
-            print(f"Error in get_ideal_angles: {str(e)}")
+            print(f"Error fetching ideal angles: {e}")
             return {}
 
-    def draw_pose(self, frame: np.ndarray) -> np.ndarray:
+    async def draw_pose(self, frame: np.ndarray) -> np.ndarray:
         """Draw pose landmarks and angles on the frame."""
         if self.stable_coordinates:
             for idx, landmark in enumerate(self.stable_coordinates):
@@ -698,23 +680,30 @@ class PoseCorrection:
                 min_value = ideal[angle]['min']
                 max_value = ideal[angle]['max']
                 
-                # Calculate error
-                error = abs(detected_value - ideal_value)
-                
-                # Check if angle is within range
-                within_range = min_value <= detected_value <= max_value
-                
+                # Calculate error with consideration for min/max range
+                if detected_value < min_value:
+                    error_value = min_value - detected_value
+                elif detected_value > max_value:
+                    error_value = detected_value - max_value
+                else:
+                    error_value = 0
+
+                # Normalize error to a 0-100 scale
+                max_possible_error = max(abs(max_value - ideal_value), abs(min_value - ideal_value))
+                if max_possible_error > 0:
+                    normalized_error = (error_value / max_possible_error) * 100
+                else:
+                    normalized_error = 0
+
                 errors[angle] = {
-                    'error': error,
-                    'within_range': within_range,
-                    'actual': detected_value,
-                    'target': ideal_value,
-                    'min': min_value,
-                    'max': max_value
+                    "detected": round(detected_value, 2),
+                    "ideal": round(ideal_value, 2),
+                    "error": round(normalized_error, 2)
                 }
         
         return errors
-
+    
+    
     def generate_feedback(self, errors):
         """Generate feedback based on angle errors."""
         feedback = []
@@ -824,6 +813,164 @@ class PoseCorrection:
 
         return feedback
 
+    async def process_correction(self, frame: np.ndarray, pose_name: str) -> Dict[int, Tuple[float, float, float, float]]:
+        """Process frame and return pose landmarks."""
+        try:
+            if frame is None:
+                print("\nERROR: Frame is None - Camera connection issue")
+                return {}
+
+            try:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            except Exception as e:
+                print(f"\nERROR: Failed to convert frame to RGB: {str(e)}")
+                return {}
+
+            results = self.pose.process(rgb_frame)
+
+            landmarks_dict = {}
+            if results.pose_landmarks:
+                for i, landmark in enumerate(results.pose_landmarks.landmark):
+                    if i in self.keypoints:
+                        x = int(landmark.x * frame.shape[1])
+                        y = int(landmark.y * frame.shape[0])
+                        z = landmark.z
+                        confidence = landmark.visibility
+                        landmarks_dict[i] = (x, y, z, confidence)
+
+            if not landmarks_dict:
+                print("\nNo keypoints detected")
+                return {}  
+
+            if self.high_fps:
+                print(f"Current FPS: {self.fps:.2f}")
+                print(f"Current Pose: {pose_name}")
+            
+            # if self.pause_stability:
+            #     if time.time() - self.pause_time >= 300:
+            #         self.pause_stability = False
+            #         print("\nResuming stability checking...")
+            #     return landmarks_dict
+            
+            if self.pause_stability:
+                current_time = time.time()
+
+                if current_time - self.pause_time >= 300:
+                    self.pause_stability = False
+                    print("\nResuming stability checking...")
+                else:
+                    # print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time:).2f} seconds")
+                    print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time):.2f} seconds")
+
+                    if current_time - self.last_feedback_time >= self.feedback_interval:
+                        self.last_feedback_time = current_time
+                        print(f"\n[INFO] Providing feedback at {time.strftime('%X')}...")
+
+                        if self.last_frame_for_feedback:
+                            angles = self.calculate_pose_angles(self.last_frame_for_feedback)
+                            errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
+                            self.process_feedback_queue(errors)
+                        else:
+                            print("[WARN] No stable frame available for feedback.")
+
+                    return landmarks_dict 
+
+            if self.previous_landmarks:
+                stable_points = sum(
+                    1 for idx in self.keypoints
+                    if idx in landmarks_dict and idx in self.previous_landmarks
+                    and abs(landmarks_dict[idx][0] - self.previous_landmarks[idx][0]) <= self.tolerance_range
+                    and abs(landmarks_dict[idx][1] - self.previous_landmarks[idx][1]) <= self.tolerance_range
+                )
+
+                print(f"\nStable Points: {stable_points}/{len(self.keypoints)}")
+
+                if stable_points >= 7:
+                    self.stable_time += 1 / self.fps
+                    if self.stable_time >= self.stability_threshold:
+                        print("\nPose Stable!")
+                        print(f"Stable for {self.stable_time:.2f} seconds")
+                        self.stable_coordinates = landmarks_dict.copy()
+
+                        print("-------------------------------------------------->Stable coordinates:",self.stable_coordinates)
+                        
+                        
+                        self.pause_stability = True
+                        self.pause_time = time.time()
+                        
+                        
+                        if self.high_fps:
+                            self.fps = 2
+                            self.high_fps = False
+                            print("\nSwitching to 2 FPS for continuous feedback")
+                            
+                        # angles = self.calculate_pose_angles(landmarks_dict)
+                        # self.ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
+                        # errors = self.calculate_angle_errors(angles, self.ideal_angles)
+                        
+                        
+                        # current_time = time.time()
+                        # if current_time - self.last_feedback_time >= 5:
+                        #     self.last_feedback_time = current_time
+                        #     self.process_feedback_queue(errors)
+                        # Store the last stable frame to use every 5s for feedback
+                        self.last_frame_for_feedback = landmarks_dict.copy()
+
+                        # if not self.ideal_angles_selected:
+                        #     self.fixed_ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
+                        #     self.ideal_angles_selected = True
+                        
+                        # get ideal angles
+                        if not self.ideal_angles_selected:
+                            ideal_data = await self.get_ideal_angles(pose_name, landmarks_dict)
+                            for angle, val in ideal_data.items():
+                                if not all(k in val for k in ("mean", "min", "max")):
+                                    print(f"[ERROR] Incomplete ideal angle data for {angle}: {val}")
+                            self.fixed_ideal_angles = ideal_data
+                            self.ideal_angles_selected = True
+                            
+                        #check time for feedback
+                        current_time = time.time()
+                        if current_time - self.last_feedback_time >= self.feedback_interval:
+                            self.last_feedback_time = current_time
+
+                            #recalculate angles using last saved frame
+                            if self.last_frame_for_feedback:
+                                angles = self.calculate_pose_angles(self.last_frame_for_feedback)
+                                errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
+                                self.process_feedback_queue(errors)
+
+                        if self.high_fps:
+                            print("\nCalculated Angles:")
+                            for angle_name, angle_value in angles.items():
+                                print(f"{angle_name}: {angle_value:.1f} degrees")
+                            
+                            if self.ideal_angles:
+                                print("\nIdeal Angles:")
+                                for angle_name, ideal in self.ideal_angles.items():
+                                    print(f"{angle_name}: Target={ideal['target']:.1f}, Min={ideal['min']:.1f}, Max={ideal['max']:.1f}")
+                            
+                            if errors:
+                                print("\nAngle Errors:")
+                                for angle_name, error in errors.items():
+                                    within_range = "✓" if error['within_range'] else "✗"
+                                    print(f"{angle_name}: Error={error['error']:.1f}°, Actual={error['actual']:.1f}°, Target={error['target']:.1f}°, Range=[{error['min']:.1f}°-{error['max']:.1f}°] ({within_range})")
+                        
+                        self.print_stable_keypoints(landmarks_dict)
+
+                        # Only classify view once
+                        if not self.view_classified:
+                            self.current_view = self.classify_view(self.stable_coordinates)
+                            print(f"View classified as: {self.current_view}")
+                            self.view_classified = True
+
+            self.previous_landmarks = landmarks_dict
+            return landmarks_dict
+
+        except Exception as e:
+            print(f"\nERROR in process_correction: {str(e)}")
+            return {}
+
 
 
     def process_feedback_queue(self, errors):
@@ -843,8 +990,7 @@ class PoseCorrection:
                         'last_error': error['error'],
                         'detected': error['actual'],
                         'ideal': error['target'],
-                        'last_speech_time': 0,
-                        'last_correction_time': 0
+                        'last_speech_time': 0
                     }
                 else:
                     self.error_tracking[angle_name]['error_sum'] += error['error']
@@ -879,34 +1025,31 @@ class PoseCorrection:
             for angle_name in self.error_tracking:
                 self.error_tracking[angle_name]['last_speech_time'] = current_time
             
-            print(f"\nProviding feedback: {feedback}")
-            print("Current Angle Errors:")
-            for angle, error in top_errors.items():
-                print(f"{angle}: Detected={error['detected']:.1f}°, Ideal={error['ideal']:.1f}°, Error={error['error']:.1f}°")
-            
             self.text_to_speech(feedback)
-            
-            # Set the last correction time to current time
+            self.last_correction = feedback
             self.last_correction_time = current_time
-            
-            # Set a flag to indicate we're in adjustment period
-            self.in_adjustment_period = True
-            self.adjustment_start_time = current_time
-            print("Starting 5-second adjustment period")
-            
-            # Clear feedback queue after providing feedback
+        
+        # Print and send feedback only if new feedback exists
+        if top_errors:
+            self.feedback_queue = [
+                {
+                    'angle': joint,
+                    'avg_error': self.error_tracking[joint]['error_sum'] / self.error_tracking[joint]['count'],
+                    'last_error': self.error_tracking[joint]['last_error']
+                } for joint in top_errors
+            ]
+
+            # Raw Feedback Summary
+            print("\nPose Correction Feedback:")
+            for item in self.feedback_queue:
+                print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
+
+        # If all joints are within range, clear feedback and reset tracking
+        if all(error['within_range'] for error in errors.values()):
             self.feedback_queue.clear()
             self.error_tracking.clear()
-            
-            # Schedule a callback to end adjustment period
-            async def end_adjustment_period():
-                start_time = time.time()
-                await asyncio.sleep(5)
-                end_time = time.time()
-                actual_duration = end_time - start_time
-                print(f"Adjustment period ended after {actual_duration:.2f} seconds")
-            
-            asyncio.create_task(end_adjustment_period())
+            print("\nPose is correct! No further corrections needed.")
+
 
     def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, float]) -> Dict[str, float]:
         """Calculate errors between calculated angles and ideal angles."""
@@ -918,22 +1061,35 @@ class PoseCorrection:
             if angle_name in ideal_angles:
                 ideal = ideal_angles[angle_name]
                 target = ideal['mean']
-                min_value = ideal['min']
-                max_value = ideal['max']
+                min_angle = ideal['min']
+                max_angle = ideal['max']
                 
                 # Calculate error
                 error = abs(angle_value - target)
                 
                 # Check if angle is within range
-                within_range = min_value <= angle_value <= max_value
+                within_range = min_angle <= angle_value <= max_angle
                 
                 errors[angle_name] = {
                     'error': error,
                     'within_range': within_range,
                     'actual': angle_value,
                     'target': target,
-                    'min': min_value,
-                    'max': max_value
+                    'min': min_angle,
+                    'max': max_angle
                 }
         
         return errors
+
+    def calculate_fps(self):
+        """Dynamically calculate FPS based on frame time."""
+        current_time = time.time()
+        frame_time = current_time - self.last_time
+        self.last_time = current_time
+
+        if frame_time > 0:
+            self.fps = 1.0 / frame_time
+        else:
+            self.fps = 30.0
+
+        return self.fps

@@ -379,6 +379,160 @@
             padding: 20px;
         }
     }
+
+    /* New styles for correction sections */
+    .correction-section {
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .correction-section h5 {
+        color: #8B694D;
+        margin: 0 0 10px 0;
+        font-size: 14px;
+    }
+
+    .coordinates-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .coordinates-item:last-child {
+        border-bottom: none;
+    }
+
+    .angle-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .angle-item:last-child {
+        border-bottom: none;
+    }
+
+    .error-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(232, 226, 208, 0.2);
+    }
+
+    .error-item:last-child {
+        border-bottom: none;
+    }
+
+    .error-item .status {
+        font-weight: bold;
+        color: #e53e3e;
+    }
+
+    .error-item .within-range {
+        color: #48bb78;
+    }
+
+    .error-item .out-of-range {
+        color: #e53e3e;
+    }
+
+    /* New styles for corrections section */
+    .corrections-list {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 8px;
+    }
+
+    .corrections-list .correction-item {
+        margin: 5px 0;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: rgba(232, 226, 208, 0.1);
+    }
+
+    .corrections-list .correction-item.high-error {
+        background-color: rgba(229, 62, 62, 0.1);
+    }
+
+    .corrections-list .correction-item .error-value {
+        color: #e53e3e;
+        font-weight: bold;
+    }
+
+    .corrections-list .correction-item .angle-name {
+        color: #8B694D;
+        font-weight: 500;
+    }
+
+    /* Corrections list styles */
+    .corrections-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 8px;
+    }
+
+    .corrections-list .correction-item {
+        margin: 5px 0;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: rgba(232, 226, 208, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .corrections-list .correction-item.high-error {
+        background-color: rgba(229, 62, 62, 0.1);
+    }
+
+    .corrections-list .correction-item .correction-text {
+        flex: 1;
+        color: #8B694D;
+        font-weight: 500;
+    }
+
+    .corrections-list .correction-item .error-value {
+        color: #e53e3e;
+        font-weight: bold;
+    }
+
+    .corrections-list .no-data {
+        text-align: center;
+        color: #8B694D;
+        padding: 20px;
+    }
+
+    /* Timer display styles */
+    .timer-display {
+        text-align: center;
+        padding: 20px;
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 8px;
+        min-height: 50px;
+    }
+
+    .timer-display .no-timer {
+        color: #8B694D;
+        font-size: 16px;
+    }
+
+    .timer-display .active-timer {
+        color: #e53e3e;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .timer-display .active-timer::before {
+        content: "⏳ ";
+    }
 </style>
 
 <div class="container mt-5">
@@ -413,15 +567,33 @@
 
     <div class="correction-panel">
         <h4>Real-time Corrections</h4>
-        <div class="error-summary" id="errorSummary">
-            <h5>Highest Error</h5>
-            <div class="highest-error" id="highestError">No errors detected</div>
-            <div class="error-details" id="errorDetails"></div>
+        <div class="correction-section" id="adjustmentTimerSection">
+            <h5>Adjustment Timer</h5>
+            <div id="adjustmentTimer" class="timer-display">
+                <div class="no-timer">No active adjustment period</div>
+            </div>
         </div>
-        <div class="corrections-list" id="correctionsList">
-            <h5>Feedback</h5>
+        
+        <div class="correction-section" id="correctionsSection">
+            <h5>Feedback Corrections</h5>
+            <div id="correctionsList" class="corrections-list"></div>
         </div>
-        <div id="poseInfo" class="mt-3">
+        
+        <div class="correction-section" id="anglesSection">
+            <h5>Current Pose Angles</h5>
+            <div id="anglesList"></div>
+        </div>
+        
+        <div class="correction-section" id="errorsSection">
+            <h5>Angle Errors</h5>
+            <div id="errorSummary">
+                <div class="highest-error" id="highestError">No errors detected</div>
+                <div class="error-details" id="errorDetails"></div>
+            </div>
+            <div class="errors-list" id="errorsList"></div>
+        </div>
+        
+        <div class="correction-section" id="poseInfo">
             <h5>Current Pose:</h5>
             <div id="currentPose" class="text-white"></div>
         </div>
@@ -470,22 +642,70 @@
                             const data = JSON.parse(event.data);
                             console.log("[INFO] Received pose correction data:", data);
                             
-                            // Update current pose
-                            const currentPose = document.getElementById('currentPose');
-                            if (currentPose && data.pose_name) {
-                                currentPose.textContent = data.pose_name;
+                            // Update adjustment timer
+                            const adjustmentTimer = document.getElementById('adjustmentTimer');
+                            if (adjustmentTimer && data.adjustment_timer) {
+                                adjustmentTimer.innerHTML = `
+                                    <div class="active-timer">${data.adjustment_timer}</div>
+                                `;
+                            } else {
+                                adjustmentTimer.innerHTML = '<div class="no-timer">No active adjustment period</div>';
                             }
 
-                            // Update status
-                            const status = document.getElementById('status');
-                            if (status && data.is_stable !== undefined) {
-                                if (data.is_stable) {
-                                    status.textContent = 'Pose Stable - Ready for Corrections';
-                                    status.classList.remove('not-running');
-                                } else {
-                                    status.textContent = 'Waiting for Stable Pose...';
-                                    status.classList.add('not-running');
-                                }
+                            // Update corrections
+                            const correctionsList = document.getElementById('correctionsList');
+                            if (correctionsList && data.corrections) {
+                                correctionsList.innerHTML = '';
+                                data.corrections.forEach(correction => {
+                                    const item = document.createElement('div');
+                                    item.className = 'correction-item';
+                                    item.innerHTML = `
+                                        <span class="correction-text">${correction}</span>
+                                    `;
+                                    correctionsList.appendChild(item);
+                                });
+                            } else {
+                                correctionsList.innerHTML = '<div class="no-data">No corrections available</div>';
+                            }
+
+                            // Update angles
+                            const anglesList = document.getElementById('anglesList');
+                            if (anglesList && data.angles) {
+                                anglesList.innerHTML = '';
+                                Object.entries(data.angles).forEach(([angleName, angleValue]) => {
+                                    const item = document.createElement('div');
+                                    item.className = 'angle-item';
+                                    item.innerHTML = `
+                                        <span class="angle-name">${angleName}</span>
+                                        <span class="angle-value">${angleValue.toFixed(1)}°</span>
+                                    `;
+                                    anglesList.appendChild(item);
+                                });
+                            } else {
+                                anglesList.innerHTML = '<div class="no-data">No angles detected</div>';
+                            }
+
+                            // Update errors
+                            const errorsList = document.getElementById('errorsList');
+                            if (errorsList && data.errors) {
+                                errorsList.innerHTML = '';
+                                Object.entries(data.errors).forEach(([angleName, error]) => {
+                                    const item = document.createElement('div');
+                                    item.className = 'error-item';
+                                    item.innerHTML = `
+                                        <span class="angle-name">${angleName}</span>
+                                        <span class="error-value">${error.error.toFixed(1)}°</span>
+                                        <span class="status ${error.within_range ? 'within-range' : 'out-of-range'}">
+                                            ${error.within_range ? '✓' : '✗'}
+                                        </span>
+                                        <span class="error-details">
+                                            Actual: ${error.actual.toFixed(1)}°, Target: ${error.target.toFixed(1)}°
+                                        </span>
+                                    `;
+                                    errorsList.appendChild(item);
+                                });
+                            } else {
+                                errorsList.innerHTML = '<div class="no-data">No errors detected</div>';
                             }
 
                             // Update error summary
@@ -516,24 +736,21 @@
                                 }
                             }
 
-                            // Update corrections list
-                            const correctionsList = document.getElementById('correctionsList');
-                            if (correctionsList) {
-                                correctionsList.innerHTML = '';
-                                
-                                if (data.correction && Array.isArray(data.correction)) {
-                                    data.correction.forEach(correction => {
-                                        const item = document.createElement('div');
-                                        item.className = `correction-item ${correction.is_high_error ? 'high-error' : ''}`;
-                                        
-                                        item.innerHTML = `
-                                            <span class="angle-name">${correction.angle_name}</span>
-                                            <span class="error-value">${correction.error.toFixed(1)}°</span>
-                                            <span class="feedback-text">${correction.feedback}</span>
-                                        `;
-                                        
-                                        correctionsList.appendChild(item);
-                                    });
+                            // Update current pose
+                            const currentPose = document.getElementById('currentPose');
+                            if (currentPose && data.pose_name) {
+                                currentPose.textContent = data.pose_name;
+                            }
+
+                            // Update status
+                            const status = document.getElementById('status');
+                            if (status && data.is_stable !== undefined) {
+                                if (data.is_stable) {
+                                    status.textContent = 'Pose Stable - Ready for Corrections';
+                                    status.classList.remove('not-running');
+                                } else {
+                                    status.textContent = 'Waiting for Stable Pose...';
+                                    status.classList.add('not-running');
                                 }
                             }
 
