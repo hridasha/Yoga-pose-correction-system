@@ -419,93 +419,81 @@ class PoseCorrection:
                 except YogaPoseIdealAngle.DoesNotExist:
                     return None
 
+            # Get current pose angles
+            current_angles = self.calculate_pose_angles(landmarks)
+            if not current_angles:
+                print("No angles calculated for current pose")
+                return {}
+
+            # First try original and flipped view
+            original_angles = await get_angles(pose_name, self.current_view, False)
+            flipped_angles = await get_angles(pose_name, self.current_view, True)
+
+            # If either view exists, calculate errors
+            if original_angles or flipped_angles:
+                original_errors = self.calculate_error(current_angles, original_angles) if original_angles else None
+                flipped_errors = self.calculate_error(current_angles, flipped_angles) if flipped_angles else None
+
+                # Calculate total errors if angles exist
+                original_total_error = sum(abs(error['error']) for error in original_errors.values()) if original_errors else float('inf')
+                flipped_total_error = sum(abs(error['error']) for error in flipped_errors.values()) if flipped_errors else float('inf')
+
+                # Choose the better view between original and flipped
+                if original_total_error <= flipped_total_error:
+                    print(f"Using original view: Error={original_total_error:.2f}")
+                    return original_angles
+                else:
+                    print(f"Using flipped view: Error={flipped_total_error:.2f}")
+                    return flipped_angles
+
+            # If neither view exists, try all views in the database
             @sync_to_async
             def get_all_views(pose_name):
                 try:
                     return list(YogaPoseIdealAngle.objects.filter(
                         pose_name=pose_name,
                         is_flipped=False
-                    ).values_list('view', flat=True))
+                    ).values_list('view', flat=True).distinct())
                 except Exception as e:
                     print(f"Error fetching all views: {e}")
                     return []
-            
-            #current psoe ang;es
-            current_angles = self.calculate_pose_angles(landmarks)
-            
-            if not current_angles:
-                print("No angles calculated for current pose")
+
+            all_views = await get_all_views(pose_name)
+            if not all_views:
+                print(f"No views found in database for pose: {pose_name}")
                 return {}
 
-            # First try to get angles for the classified view
-            view = self.classify_view(self.stable_coordinates)
-            print(f"\nSearching for ideal angles for view: {view}")
-            
-            # Try both flipped and non-flipped versions
-            views_to_check = [(view, False), (view, True)]
-            
-            all_views = await get_all_views(pose_name)
-            
-            for v in all_views:
-                if v != view:  
-                    views_to_check.extend([(v, False), (v, True)])
-
-            min_error = float('inf')
+            # Try all views and find the best match
             best_view = None
             best_angles = None
-            best_errors = None
+            min_error = float('inf')
 
-            for view_name, is_flipped in views_to_check:
-                try:
-                    # Get angles for this view
-                    ideal_angles = await get_angles(pose_name, view_name, is_flipped)
-                    
-                    if ideal_angles:
-                        # Calculate errors
-                        errors = self.calculate_error(current_angles, ideal_angles)
+            for view in all_views:
+                # Try both original and flipped versions
+                for is_flipped in [False, True]:
+                    angles = await get_angles(pose_name, view, is_flipped)
+                    if angles:
+                        errors = self.calculate_error(current_angles, angles)
+                        total_error = sum(abs(error['error']) for error in errors.values())
                         
-                        # Calculate total error
-                        total_error = sum(error['error'] for error in errors.values())
-                        
-                        # Check if this is the best match
                         if total_error < min_error:
                             min_error = total_error
-                            best_view = f"{view_name} (Flipped={is_flipped})"
-                            best_angles = ideal_angles
-                            best_errors = errors
-                        
-                        print("="*50)
-                        print(f"\nView: {view_name} (Flipped={is_flipped})")
-                        print(f"Total Error: {total_error:.2f}")
-                        print("Angle Errors:")
-                        for angle, error in errors.items():
-                            print(f"{angle}: Detected={error['detected']:.2f}°, Ideal={error['ideal']:.2f}°, Error={error['error']:.2f}°")
-                        print("="*50)
-                except Exception as e:
-                    print(f"Error processing view {view_name}: {e}")
-                    continue
+                            best_view = f"{view} (Flipped={is_flipped})"
+                            best_angles = angles
+                            
+                        print(f"View: {view} (Flipped={is_flipped}) - Error: {total_error:.2f}")
 
             if best_angles:
-                print("="*50)
-                print(f"\nBest Matching View: {best_view}")
-                print(f"Total Error: {min_error:.2f}")
-                print("\nBest Angle Errors:")
-                for angle, error in best_errors.items():
-                    print(f"{angle}: Detected={error['detected']:.2f}°, Ideal={error['ideal']:.2f}°, Error={error['error']:.2f}°")
-                print("="*50)
-                feedback = self.generate_feedback(best_errors)
-                print("\nAdjustment Feedback:")
-                print(feedback)
-                
+                print(f"Best matching view found: {best_view} with error: {min_error:.2f}")
                 return best_angles
             else:
-                print(f"No ideal angles found for pose: {pose_name}")
+                print("No suitable view found in database")
                 return {}
 
         except Exception as e:
             print(f"Error fetching ideal angles: {e}")
             return {}
-
+    
     async def draw_pose(self, frame: np.ndarray) -> np.ndarray:
         """Draw pose landmarks and angles on the frame."""
         if self.stable_coordinates:
@@ -680,25 +668,19 @@ class PoseCorrection:
                 min_value = ideal[angle]['min']
                 max_value = ideal[angle]['max']
                 
-                # Calculate error with consideration for min/max range
-                if detected_value < min_value:
-                    error_value = min_value - detected_value
-                elif detected_value > max_value:
-                    error_value = detected_value - max_value
-                else:
-                    error_value = 0
-
-                # Normalize error to a 0-100 scale
-                max_possible_error = max(abs(max_value - ideal_value), abs(min_value - ideal_value))
-                if max_possible_error > 0:
-                    normalized_error = (error_value / max_possible_error) * 100
-                else:
-                    normalized_error = 0
-
+                # Calculate error
+                error = abs(detected_value - ideal_value)
+                
+                # Check if angle is within range
+                within_range = min_value <= detected_value <= max_value
+                
                 errors[angle] = {
-                    "detected": round(detected_value, 2),
-                    "ideal": round(ideal_value, 2),
-                    "error": round(normalized_error, 2)
+                    'error': error,
+                    'within_range': within_range,
+                    'actual': detected_value,
+                    'target': ideal_value,
+                    'min': min_value,
+                    'max': max_value
                 }
         
         return errors

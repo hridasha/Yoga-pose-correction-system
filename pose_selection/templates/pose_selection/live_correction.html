@@ -9,7 +9,7 @@
     body {
         background-color: #E8E2D0;
         color: #2B3241;
-        font-family: 'Poppins',sans-serif;
+        font-family: 'Poppins', sans-serif;
     }
 
     .header {
@@ -156,7 +156,7 @@
     }
 
     .instructions h3 {
-        color: #8B694D;
+        color: #ffffff;
         margin-bottom: 20px;
     }
 
@@ -168,7 +168,7 @@
 
     .instructions p:before {
         content: "•";
-        color: #8B694D;
+        color: #ffffff;
         font-size: 20px;
         position: absolute;
         left: 0;
@@ -188,66 +188,84 @@
         gap: 20px;
     }
 
-    .correction-panel h4 {
-        color: #8B694D;
+    .correction-panel h4, .correction-panel h5 {
+        color: #E8E2D0;
         margin: 0;
         padding-bottom: 10px;
         border-bottom: 2px solid #8B694D;
+    }
+
+    .correction-section {
+        background-color: rgba(43, 50, 65, 0.8);
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .corrections-list, .anglesList, .errorsList {
+        color: #E8E2D0;
     }
 
     .correction-item {
         background-color: rgba(139, 105, 77, 0.1);
         padding: 12px;
         border-radius: 8px;
-        margin: 10px 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        margin-bottom: 10px;
+        color: #E8E2D0;
     }
 
-    .correction-item.high-error {
-        background-color: rgba(229, 62, 62, 0.1);
-        border-left: 4px solid #e53e3e;
-    }
-
-    .correction-item .angle-name {
+    .correction-item .correction-text {
+        color: #E8E2D0;
         font-weight: 500;
-        color: #8B694D;
     }
 
     .correction-item .error-value {
-        font-weight: bold;
         color: #e53e3e;
+        font-weight: bold;
     }
 
-    .correction-item .feedback-text {
-        flex: 1;
+    .angle-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        background-color: rgba(139, 105, 77, 0.1);
+        border-radius: 6px;
         color: #E8E2D0;
     }
 
-    /* Error Summary */
-    .error-summary {
-        background-color: rgba(139, 105, 77, 0.2);
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
-
-    .error-summary h5 {
+    .angle-item .angle-name {
         color: #8B694D;
-        margin: 0 0 10px 0;
-        font-size: 16px;
+        font-weight: 500;
     }
 
-    .error-summary .highest-error {
-        font-weight: bold;
-        color: #e53e3e;
-        font-size: 18px;
+    .angle-item .angle-value {
+        display: flex;
+        gap: 10px;
     }
 
-    .error-summary .error-details {
+    .angle-item .current-value {
+        color: #48bb78;
+    }
+
+    .angle-item .target-value {
         color: #E8E2D0;
-        margin-top: 10px;
+    }
+
+    .error-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        background-color: rgba(229, 62, 62, 0.1);
+        border-radius: 6px;
+        color: #E8E2D0;
+    }
+
+    .highest-error {
+        color: #E8E2D0;
+        font-weight: bold;
+    }
+
+    .error-details {
+        color: #E8E2D0;
     }
 
     /* Profile Photo Modal */
@@ -465,7 +483,7 @@
     }
 
     .corrections-list .correction-item .angle-name {
-        color: #8B694D;
+        color: #ffffff;
         font-weight: 500;
     }
 
@@ -495,7 +513,7 @@
 
     .corrections-list .correction-item .correction-text {
         flex: 1;
-        color: #8B694D;
+        color: #E8E2D0;
         font-weight: 500;
     }
 
@@ -543,15 +561,15 @@
         <!-- Reference Image Overlay -->
         <div class="reference-overlay">
             {% if pose.image %}
-                <img src="{{ pose.image.url }}" alt="{{ pose_name }} reference" class="reference-image">
+            <img src="{{ pose.image.url }}" alt="{{ pose_name }} reference" class="reference-image">
             {% else %}
-                <img src="{% static 'images/default_pose_image.jpg' %}" alt="Default Pose Image" class="reference-image">
+            <img src="{% static 'images/default_pose_image.jpg' %}" alt="Default Pose Image" class="reference-image">
             {% endif %}
         </div>
     </div>
 
     <div class="status">Server Status: <span id="serverStatus">Checking...</span></div>
-    
+
     <div class="button-container text-center">
         <button class="btn-yoga" id="startButton">Start Stream</button>
         <button class="btn-yoga" id="stopButton" style="display: none;">Stop Stream</button>
@@ -567,23 +585,15 @@
 
     <div class="correction-panel">
         <h4>Real-time Corrections</h4>
-        <div class="correction-section" id="adjustmentTimerSection">
-            <h5>Adjustment Timer</h5>
-            <div id="adjustmentTimer" class="timer-display">
-                <div class="no-timer">No active adjustment period</div>
-            </div>
-        </div>
-        
+
+
         <div class="correction-section" id="correctionsSection">
             <h5>Feedback Corrections</h5>
             <div id="correctionsList" class="corrections-list"></div>
         </div>
-        
-        <div class="correction-section" id="anglesSection">
-            <h5>Current Pose Angles</h5>
-            <div id="anglesList"></div>
-        </div>
-        
+
+ 
+
         <div class="correction-section" id="errorsSection">
             <h5>Angle Errors</h5>
             <div id="errorSummary">
@@ -592,7 +602,7 @@
             </div>
             <div class="errors-list" id="errorsList"></div>
         </div>
-        
+
         <div class="correction-section" id="poseInfo">
             <h5>Current Pose:</h5>
             <div id="currentPose" class="text-white"></div>
@@ -635,77 +645,52 @@
                     ctx.fillStyle = 'black';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 };
-
                 websocket.onmessage = async (event) => {
                     try {
                         if (typeof event.data === "string") {
                             const data = JSON.parse(event.data);
                             console.log("[INFO] Received pose correction data:", data);
-                            
-                            // Update adjustment timer
-                            const adjustmentTimer = document.getElementById('adjustmentTimer');
-                            if (adjustmentTimer && data.adjustment_timer) {
-                                adjustmentTimer.innerHTML = `
-                                    <div class="active-timer">${data.adjustment_timer}</div>
-                                `;
-                            } else {
-                                adjustmentTimer.innerHTML = '<div class="no-timer">No active adjustment period</div>';
-                            }
 
                             // Update corrections
                             const correctionsList = document.getElementById('correctionsList');
-                            if (correctionsList && data.corrections) {
+                            if (correctionsList) {
                                 correctionsList.innerHTML = '';
-                                data.corrections.forEach(correction => {
-                                    const item = document.createElement('div');
-                                    item.className = 'correction-item';
-                                    item.innerHTML = `
-                                        <span class="correction-text">${correction}</span>
-                                    `;
-                                    correctionsList.appendChild(item);
-                                });
-                            } else {
-                                correctionsList.innerHTML = '<div class="no-data">No corrections available</div>';
+                                if (data.correction && data.correction.length > 0) {
+                                    data.correction.forEach(correction => {
+                                        const item = document.createElement('div');
+                                        item.className = 'correction-item';
+                                        item.innerHTML = `<span class="correction-text">${correction}</span>`;
+                                        correctionsList.appendChild(item);
+                                    });
+                                } else {
+                                    correctionsList.innerHTML = '<div class="no-data">No corrections available</div>';
+                                }
                             }
 
-                            // Update angles
-                            const anglesList = document.getElementById('anglesList');
-                            if (anglesList && data.angles) {
-                                anglesList.innerHTML = '';
-                                Object.entries(data.angles).forEach(([angleName, angleValue]) => {
-                                    const item = document.createElement('div');
-                                    item.className = 'angle-item';
-                                    item.innerHTML = `
-                                        <span class="angle-name">${angleName}</span>
-                                        <span class="angle-value">${angleValue.toFixed(1)}°</span>
-                                    `;
-                                    anglesList.appendChild(item);
-                                });
-                            } else {
-                                anglesList.innerHTML = '<div class="no-data">No angles detected</div>';
-                            }
 
                             // Update errors
                             const errorsList = document.getElementById('errorsList');
-                            if (errorsList && data.errors) {
+                            if (errorsList) {
                                 errorsList.innerHTML = '';
-                                Object.entries(data.errors).forEach(([angleName, error]) => {
-                                    const item = document.createElement('div');
-                                    item.className = 'error-item';
-                                    item.innerHTML = `
-                                        <span class="angle-name">${angleName}</span>
-                                        <span class="error-value">${error.error.toFixed(1)}°</span>
-                                        <span class="status ${error.within_range ? 'within-range' : 'out-of-range'}">
-                                            ${error.within_range ? '✓' : '✗'}
-                                        </span>
-                                        <span class="error-details">
-                                            Actual: ${error.actual.toFixed(1)}°, Target: ${error.target.toFixed(1)}°
-                                        </span>
-                                    `;
-                                    errorsList.appendChild(item);
-                                });
-                            } else {
-                                errorsList.innerHTML = '<div class="no-data">No errors detected</div>';
+                                if (data.errors && Object.keys(data.errors).length > 0) {
+                                    Object.entries(data.errors).forEach(([angleName, error]) => {
+                                        const item = document.createElement('div');
+                                        item.className = 'error-item';
+                                        item.innerHTML = `
+                                            <span class="angle-name">${angleName}</span>
+                                            <span class="error-value">${error.error.toFixed(1)}°</span>
+                                            <span class="status ${error.within_range ? 'within-range' : 'out-of-range'}">
+                                                ${error.within_range ? '✓' : '✗'}
+                                            </span>
+                                            <span class="error-details">
+                                                Actual: ${error.actual.toFixed(1)}°, Target: ${error.target.toFixed(1)}°
+                                            </span>
+                                        `;
+                                        errorsList.appendChild(item);
+                                    });
+                                } else {
+                                    errorsList.innerHTML = '<div class="no-data">No errors detected</div>';
+                                }
                             }
 
                             // Update error summary
@@ -714,21 +699,21 @@
                             const errorDetails = document.getElementById('errorDetails');
 
                             if (errorSummary && highestError && errorDetails) {
-                                if (data.errors) {
-                                    // Find highest error
-                                    const highest = Object.entries(data.errors).reduce((max, [key, value]) => 
-                                        value.error > max.error ? {key, ...value} : max
-                                    , {error: -Infinity});
+                                if (data.errors && Object.keys(data.errors).length > 0) {
+                                    const highest = Object.entries(data.errors).reduce(
+                                        (max, [key, value]) =>
+                                            value.error > max.error ? { key, ...value } : max,
+                                        { error: -Infinity }
+                                    );
 
                                     highestError.textContent = `${highest.key}: ${highest.error.toFixed(1)}° error`;
-                                    
-                                    // Format error details
+
                                     const details = Object.entries(data.errors)
-                                        .map(([key, value]) => 
+                                        .map(([key, value]) =>
                                             `${key}: ${value.error.toFixed(1)}° error (${value.actual.toFixed(1)}° vs ${value.target.toFixed(1)}°)`
                                         )
                                         .join('\n');
-                                    
+
                                     errorDetails.textContent = details;
                                 } else {
                                     highestError.textContent = 'No errors detected';
@@ -757,6 +742,7 @@
                             return;
                         }
 
+                        // Video handling
                         const array = new Uint8Array(event.data);
                         const blob = new Blob([array], { type: 'image/jpeg' });
                         const url = URL.createObjectURL(blob);
@@ -793,6 +779,7 @@
                         ctx.fillText('Error displaying video or feedback', 10, 50);
                     }
                 };
+
 
                 websocket.onclose = () => {
                     console.log('WebSocket connection closed');
@@ -871,7 +858,7 @@
         document.getElementById('stopButton').addEventListener('click', stopStream);
 
         // Close modal when clicking outside
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             const modal = document.getElementById('photoModal');
             if (event.target == modal) {
                 closeModal();
@@ -879,11 +866,11 @@
         }
 
         // Close modal when pressing ESC
-        document.onkeydown = function(event) {
+        document.onkeydown = function (event) {
             if (event.key === 'Escape') {
                 closeModal();
             }
         };
     </script>
 
-{% endblock %}
+    {% endblock %}

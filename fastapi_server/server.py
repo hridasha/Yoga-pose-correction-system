@@ -21,6 +21,8 @@ engine.setProperty('volume', 1)  # Set volume
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+logging.getLogger("comtypes").setLevel(logging.WARNING)
+
 class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.bool_):
@@ -260,12 +262,9 @@ async def process_frame(websocket: WebSocket):
         
 
 
-
 async def process_websocket(websocket: WebSocket, pose_name: str):
     frame_count = 0
-    feedback_interval = 10
-    cooldown_duration = 5
-    last_feedback_time = 0
+    feedback_interval = 10  # every 10th frame at 2 FPS = 5 seconds
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
@@ -279,12 +278,15 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
     stable_time = 0
     stability_threshold = 0.5
     tolerance_range = 5
+    stability_done = False
     ideal_angles_selected = False
     fixed_ideal_angles = None
     last_frame_for_feedback = None
     view_classified = False
-    pause_stability = False
-    pause_time = 0
+
+    cooldown_start_time = None
+    fps = 30
+    delay = 1 / fps
 
     try:
         while cap.isOpened():
@@ -295,27 +297,32 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
 
             frame = cv2.resize(frame, (640, 480))
             frame_count += 1
+            print(f"\n=== FRAME {frame_count} ===")
+            print(f"Current FPS: {fps:.2f}")
+            print(f"Pose Name: {pose_name}")
+            print(f"Stability Status: {stability_done}")
+            print(f"View Classified: {view_classified}")
+            print(f"Ideal Angles Selected: {ideal_angles_selected}")
 
-            # Send frame over WebSocket
+            # Send frame to frontend
             _, buffer = cv2.imencode(".jpg", frame)
             frame_bytes = buffer.tobytes()
             try:
                 await websocket.send_bytes(frame_bytes)
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(delay)
             except WebSocketDisconnect:
                 logger.info("WebSocket disconnected")
                 break
 
-            # Only process feedback frame every `feedback_interval` frames
             if frame_count % feedback_interval != 0:
+                print("[INFO] Skipping frame - not a feedback interval")
                 continue
 
-            try:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                results = corrector.pose.process(rgb_frame)
-            except Exception as e:
-                logger.error(f"Frame processing error: {e}")
-                continue
+            print("\n=== PROCESSING FRAME ===")
+            print(f"Processing frame {frame_count} for pose detection...")
+
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = corrector.pose.process(rgb_frame)
 
             if not results.pose_landmarks:
                 logger.warning("No pose landmarks detected")
@@ -332,81 +339,133 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                     landmarks[i] = (x, y, z, visibility)
 
             if not landmarks:
+                print("[WARNING] No valid landmarks extracted")
                 continue
 
-            # Draw keypoints
+            # Debug: Print landmarks for 10th frame
+            if frame_count == 10:
+                print("\n=== LANDMARKS FOR FRAME 10 ===")
+                for idx, (x, y, z, conf) in landmarks.items():
+                    print(f"Landmark {idx}: X={x}, Y={y}, Z={z:.4f}, Confidence={conf:.2f}")
+
+            # Draw keypoints and connections
             for idx, (x, y, z, conf) in landmarks.items():
                 if conf > 0.5:
                     cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
                     cv2.putText(frame, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-
             for p1, p2 in corrector.connections:
                 if p1 in landmarks and p2 in landmarks:
                     x1, y1, _, _ = landmarks[p1]
                     x2, y2, _, _ = landmarks[p2]
                     cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-            # === Pause stability mode ===
-            current_time = time.time()
-            if pause_stability:
-                if current_time - pause_time >= 300:
-                    pause_stability = False
-                    logger.info("Resuming stability check")
-                else:
-                    print(f"\n[INFO] Time since last feedback: {abs(current_time - last_feedback_time):.2f} seconds")
-
-                    if current_time - last_feedback_time >= cooldown_duration:
-                        last_feedback_time = current_time
-                        print(f"\n[INFO] Sending feedback... at {time.strftime('%X')}")
-                        if last_frame_for_feedback and fixed_ideal_angles:
-                            angles = corrector.calculate_pose_angles(last_frame_for_feedback)
-                            errors = corrector.calculate_angle_errors(angles, fixed_ideal_angles)
-                            corrector.process_feedback_queue(errors)
-                    continue
-
-            # === Stability Check ===
-            if previous_landmarks:
+            # === Stability Check Once ===
+            if not stability_done and previous_landmarks:
                 stable_points = sum(
                     1 for idx in corrector.keypoints
                     if idx in landmarks and idx in previous_landmarks
                     and abs(landmarks[idx][0] - previous_landmarks[idx][0]) <= tolerance_range
                     and abs(landmarks[idx][1] - previous_landmarks[idx][1]) <= tolerance_range
                 )
-                print(f"\nStable Points: {stable_points}/{len(corrector.keypoints)}")
+                print(f"\n=== STABILITY CHECK ===")
+                print(f"Stable Points: {stable_points}/{len(corrector.keypoints)}")
+                print(f"Stable Time: {stable_time:.2f} seconds")
 
                 if stable_points >= 7:
-                    stable_time += 1 / corrector.fps
+                    stable_time += 1 / fps
+                    print(f"Updated Stable Time: {stable_time:.2f} seconds")
                     if stable_time >= stability_threshold:
-                        logger.info(f"Pose Stable! Stable for {stable_time:.2f} seconds")
-                        stable_coordinates = landmarks.copy()
-                        pause_stability = True
-                        pause_time = current_time
-                        last_frame_for_feedback = stable_coordinates.copy()
-                        print(f"\n[INFO] Last frame for feedback: {last_frame_for_feedback}")
+                        print("\n=== POSE STABLE ===")
+                        print("Pose is stable --------->> STARTING CORRECTION")
+                        stability_done = True
+                        last_frame_for_feedback = landmarks.copy()
 
-                        # classify view once
+                        # View classification
                         if not view_classified:
-                            corrector.current_view = corrector.classify_view(stable_coordinates)
+                            corrector.current_view = corrector.classify_view(landmarks)
                             view_classified = True
-                            logger.info(f"View classified as: {corrector.current_view}")
+                            print(f"\n=== VIEW CLASSIFICATION ===")
+                            print(f"View classified as: {corrector.current_view}")
 
-                        # select ideal angles once
+                        # Load ideal angles
                         if not ideal_angles_selected:
                             try:
-                                ideal_data = await corrector.get_ideal_angles(pose_name, stable_coordinates)
-                                for angle, val in ideal_data.items():
-                                    if not all(k in val for k in ("mean", "min", "max")):
-                                        logger.warning(f"Incomplete angle data for {angle}")
+                                print("\n=== GETTING IDEAL ANGLES ===")
+                                ideal_data = await corrector.get_ideal_angles(pose_name, landmarks)
                                 fixed_ideal_angles = ideal_data
                                 ideal_angles_selected = True
+                                print("Ideal angles selected")
+                                
+                                # Debug: Print ideal angles for 10th frame
+                                if frame_count == 10:
+                                    print("\n=== IDEAL ANGLES FOR FRAME 10 ===")
+                                    for angle, data in ideal_data.items():
+                                        print(f"{angle}: Mean={data['mean']:.1f}, Min={data['min']:.1f}, Max={data['max']:.1f}")
+
                             except Exception as e:
                                 logger.error(f"Failed to get ideal angles: {e}")
+                                continue
 
-                        # feedback after pause
+                        # First feedback
                         if last_frame_for_feedback and fixed_ideal_angles:
+                            print("\n=== CALCULATING ANGLES ===")
                             angles = corrector.calculate_pose_angles(last_frame_for_feedback)
+                            
+                            # Debug: Print calculated angles for 10th frame
+                            if frame_count == 10:
+                                print("\n=== CALCULATED ANGLES FOR FRAME 10 ===")
+                                for angle, value in angles.items():
+                                    print(f"{angle}: {value:.1f} degrees")
+
                             errors = corrector.calculate_angle_errors(angles, fixed_ideal_angles)
                             corrector.process_feedback_queue(errors)
+                            print("\n=== FEEDBACK ===")
+                            print("Initial feedback sent")
+
+                        # Begin cooldown
+                        cooldown_start_time = time.time()
+
+                        # Switch to 2 FPS
+                        fps = 2
+                        delay = 1 / fps
+                        frame_count = 0
+                        print("\n=== FPS SWITCH ===")
+                        print("Switched to 2 FPS for feedback mode")
+                        continue
+
+            # Wait 5 seconds for user adjustment after feedback
+            if stability_done and cooldown_start_time:
+                elapsed = time.time() - cooldown_start_time
+                if elapsed < 5:
+                    print(f"\n=== WAITING ===")
+                    print(f"Waiting {5 - elapsed:.2f} seconds for user to adjust pose...")
+                    continue
+                else:
+                    cooldown_start_time = None
+                    print("\n=== RESUMING FEEDBACK ===")
+                    print("User adjustment time complete. Resuming feedback.")
+
+            # Feedback every 5 seconds (i.e., every 10th frame at 2 FPS)
+            if stability_done and ideal_angles_selected and view_classified:
+                last_frame_for_feedback = landmarks.copy()
+                angles = corrector.calculate_pose_angles(last_frame_for_feedback)
+                errors = corrector.calculate_angle_errors(angles, fixed_ideal_angles)
+                corrector.process_feedback_queue(errors)
+                print(f"\n=== FEEDBACK SENT ===")
+                print(f"Feedback sent at {time.strftime('%X')}")
+                try:
+                    await websocket.send_text(json.dumps({
+                        "pose_name": pose_name,
+                        "landmarks": landmarks,
+                        "correction": corrector.generate_feedback(landmarks),
+                        "idealAngles": fixed_ideal_angles,
+                        "errors": errors if ideal_angles_selected else None,
+                        "stable_points": stable_points,
+                        "stable_time": stable_time,
+                        "is_stable": stable_time >= stability_threshold
+                    }, cls=NumpyJSONEncoder))
+                except Exception as e:
+                    logger.error(f"Error sending websocket message: {str(e)}")
 
             previous_landmarks = landmarks.copy()
 
@@ -415,157 +474,7 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
     finally:
         cap.release()
         engine.stop()
-        logger.info("Websocket closed")
-
-
-# async def process_websocket(websocket: WebSocket, pose_name: str):
-#     frame_count = 0
-#     feedback_interval = 10 
-#     cooldown_duration = 5  
-#     last_feedback_time = 0
-#     cap = cv2.VideoCapture(0)
-    
-#     if not cap.isOpened():
-#         logger.error("Failed to open camera")
-#         return
-    
-#     logger.info("Camera opened successfully")
-#     corrector = pose_corrector
-#     detected_view = False
-#     previous_landmarks = None
-#     stable_time = 0
-#     stability_threshold = 0.5  # 0.5 stablility check
-#     tolerance_range = 5
-#     ideal_angles_selected = False
-#     fixed_ideal_angles = None
-#     last_frame_for_feedback = None
-#     first_feedback_given = False
-#     view_classified = False 
-     
-#     try:
-#         while cap.isOpened():
-#             ret, frame = cap.read()
-#             if not ret:
-#                 logger.error("Failed to read frame from camera")
-#                 break
-
-#             frame = cv2.resize(frame, (640, 480))
-            
-#             frame_count += 1
-            
-#             _, buffer = cv2.imencode(
-#                 ".jpg", 
-#                 frame, 
-#                 [int(cv2.IMWRITE_JPEG_QUALITY), 75, 
-#                  int(cv2.IMWRITE_JPEG_OPTIMIZE), 1,  
-#                  int(cv2.IMWRITE_JPEG_PROGRESSIVE), 1]  
-#             )
-#             frame_bytes = buffer.tobytes()
-            
-#             try:
-#                 await websocket.send_bytes(frame_bytes)
-#                 await asyncio.sleep(0.01) 
-#             except WebSocketDisconnect:
-#                 logger.info("WebSocket disconnected")
-#                 break
-            
-#             if frame_count % feedback_interval == 0:
-#                 landmarks = await corrector.process_correction(frame, pose_name)
-                
-#                 if landmarks is not None:
-#                     for idx, (x, y, z, confidence) in landmarks.items():
-#                         if confidence > 0.5:
-#                             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
-#                             cv2.putText(frame, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-                    
-#                     for (p1, p2) in corrector.connections:
-#                         if p1 in landmarks and p2 in landmarks:
-#                             x1, y1, _, _ = landmarks[p1]
-#                             x2, y2, _, _ = landmarks[p2]
-#                             cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    
-#                     # Check for stability
-#                     if previous_landmarks:
-#                         stable_points = sum(
-#                             1 for idx in corrector.keypoints
-#                             if idx in landmarks and idx in previous_landmarks
-#                             and abs(landmarks[idx][0] - previous_landmarks[idx][0]) <= tolerance_range
-#                             and abs(landmarks[idx][1] - previous_landmarks[idx][1]) <= tolerance_range
-#                         )
-
-#                         if stable_points >= 7:  # 7 stable points required
-#                             stable_time += 1 / corrector.fps
-
-#                             if stable_time >= stability_threshold:
-#                                 logger.info(f"Pose Stable! Stable for {stable_time:.2f} seconds")
-                                
-#                                 # Store stable coordinates
-#                                 stable_coordinates = landmarks.copy()
-                                
-#                                 # Get ideal angles only once
-#                                 if not ideal_angles_selected:
-#                                     try:
-#                                         ideal_angles = await corrector.get_ideal_angles(pose_name, landmarks)
-#                                         fixed_ideal_angles = ideal_angles
-#                                         ideal_angles_selected = True
-#                                         last_frame_for_feedback = landmarks.copy()
-#                                     except Exception as e:
-#                                         logger.error(f"Error getting ideal angles: {str(e)}")
-#                                         ideal_angles_selected = False
-                                
-#                                 # Calculate angles and errors only after view is classified
-#                                 if ideal_angles_selected:
-#                                     try:
-#                                         angles = corrector.calculate_pose_angles(landmarks)
-#                                         errors = corrector.calculate_error(angles, fixed_ideal_angles)
-                                        
-#                                         # Check if we're in cooldown period
-#                                         current_time = time.time()
-#                                         if current_time - last_feedback_time > cooldown_duration:
-#                                             if errors:
-#                                                 highest_error = max(errors.items(), key=lambda x: x[1]['error']) if errors else None
-#                                                 if highest_error:
-#                                                     angle_name = highest_error[0]
-#                                                     error_value = highest_error[1]['error']
-                                                    
-#                                                     # Generate speech feedback
-#                                                     if 'Elbow' in angle_name:
-#                                                         speech_text = f"Bend your {angle_name} slightly. error with {error_value:.2f}"
-#                                                     else:
-#                                                         speech_text = f"Adjust your {angle_name} to be more closed. error with {error_value:.2f}"
-                                                    
-#                                                     # Speak feedback and update last feedback time
-#                                                     engine.say(speech_text)
-#                                                     engine.runAndWait()
-#                                                     last_feedback_time = current_time
-                                                    
-#                                                     # After first feedback, switch to lower processing rate
-#                                                     if not first_feedback_given:
-#                                                         feedback_interval = 100  # Process every 100 frames (about 0.3 FPS)
-#                                                         first_feedback_given = True
-#                                     except Exception as e:
-#                                         logger.error(f"Error calculating angles/errors: {str(e)}")
-#                                         errors = None
-#                                 try:
-#                                     await websocket.send_text(json.dumps({
-#                                         "pose_name": pose_name,
-#                                         "landmarks": landmarks,
-#                                         "correction": corrector.generate_feedback(landmarks),
-#                                         "idealAngles": fixed_ideal_angles,
-#                                         "errors": errors if ideal_angles_selected else None,
-#                                         "stable_points": stable_points,
-#                                         "stable_time": stable_time,
-#                                         "is_stable": stable_time >= stability_threshold
-#                                     }, cls=NumpyJSONEncoder))
-#                                 except Exception as e:
-#                                     logger.error(f"Error sending websocket message: {str(e)}")
-                    
-#                     previous_landmarks = landmarks
-            
-#     finally:
-#         cap.release()
-#         engine.stop()
-#         logger.info("Camera released")
+        logger.info("WebSocket closed")
 
 
 @app.websocket("/ws/correction/{pose_name:path}")
