@@ -153,7 +153,7 @@ async def process_frame(websocket: WebSocket):
                                     engine.runAndWait()
                                     
                                     # Add cooldown period
-                                    detector.feedback_timer_start = time.time() + 5  # Add 5 seconds delay before next feedback
+                                    detector.feedback_timer_start = time.time()  # Add 5 seconds delay before next feedback
                         else:
                             print("[WARNING] No ideal angles available for feedback")
 
