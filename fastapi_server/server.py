@@ -12,6 +12,8 @@ import time
 from pose_utils import PoseDetector
 from pose_correction import PoseCorrection
 import pyttsx3
+import os
+from pathlib import Path
 
 
 
@@ -56,9 +58,11 @@ app.add_middleware(
 )
 
 active_connections = set()
-
-MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
-POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODEL_PATH = str(PROJECT_ROOT / "datasets" / "final_student_model_35.keras")
+POSE_CLASSES_PATH = str(PROJECT_ROOT / "datasets" / "pose_classes.pkl")
+# MODEL_PATH = r"\datasets\final_student_model_35.keras"
+# POSE_CLASSES_PATH = r"\datasets\pose_classes.pkl"
 
 pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
 pose_corrector = PoseCorrection()
