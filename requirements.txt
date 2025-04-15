@@ -136,7 +136,6 @@ python-json-logger==3.3.0
 python-multipart==0.0.9
 pyttsx3==2.98
 pytz==2025.1
-pywinpty==2.0.15
 PyYAML==6.0.2
 pyzmq==26.3.0
 realtime==2.4.2
