@@ -80,7 +80,7 @@ async def process_frame(websocket: WebSocket):
     frame_count=0
 
     try:
-        while websocket.client_state == WebSocketState.CONNECTED:
+        while websocket.application_state == WebSocketState.CONNECTED:
             ret, frame = cap.read()
             if not ret:
                 logger.error("Failed to read frame from camera")
@@ -220,7 +220,10 @@ async def process_frame(websocket: WebSocket):
                             else:
                                 errors = None
                         else:
+                            current_angles = None
+                            ideal_angles = None
                             errors = None
+
                     else:
                         current_angles = None
                         ideal_angles = None
@@ -257,18 +260,13 @@ async def process_frame(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected")
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        logger.error(f"Error in process_frame: {e}")
     finally:
         cap.release()
         logger.info("Camera released")
-
         if websocket in active_connections:
             active_connections.remove(websocket)
             logger.info("Removed WebSocket from active connections")
-
-        await websocket.close()
-        
-        
 
 
 async def process_websocket(websocket: WebSocket, pose_name: str):
@@ -298,7 +296,7 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
     delay = 1 / fps
 
     try:
-        while cap.isOpened():
+        while cap.isOpened() and websocket.application_state == WebSocketState.CONNECTED:
             ret, frame = cap.read()
             if not ret:
                 logger.error("Failed to read frame from camera")
@@ -315,12 +313,14 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
 
             _, buffer = cv2.imencode(".jpg", frame)
             frame_bytes = buffer.tobytes()
-            try:
-                await websocket.send_bytes(frame_bytes)
-                await asyncio.sleep(delay)
-            except WebSocketDisconnect:
-                logger.info("WebSocket disconnected")
-                break
+            
+            if websocket.application_state == WebSocketState.CONNECTED:
+                try:
+                    await websocket.send_bytes(frame_bytes)
+                    await asyncio.sleep(delay)
+                except WebSocketDisconnect:
+                    logger.info("WebSocket disconnected")
+                    break
 
             if frame_count % feedback_interval != 0:
                 print("[INFO] Skipping frame - not a feedback interval")
@@ -456,19 +456,20 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                 corrector.process_feedback_queue(errors)
                 print(f"\n=== FEEDBACK SENT ===")
                 print(f"Feedback sent at {time.strftime('%X')}")
-                try:
-                    await websocket.send_text(json.dumps({
-                        "pose_name": pose_name,
-                        "landmarks": landmarks,
-                        "correction": corrector.generate_feedback(landmarks),
-                        "idealAngles": fixed_ideal_angles,
-                        "errors": errors,
-                        "stable_points": stable_points,
-                        "stable_time": stable_time,
-                        "is_stable": stable_time >= stability_threshold
-                    }, cls=NumpyJSONEncoder))
-                except Exception as e:
-                    logger.error(f"Error sending websocket message: {str(e)}")
+                if websocket.application_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_text(json.dumps({
+                            "pose_name": pose_name,
+                            "landmarks": landmarks,
+                            "correction": corrector.generate_feedback(landmarks),
+                            "idealAngles": fixed_ideal_angles,
+                            "errors": errors,
+                            "stable_points": stable_points,
+                            "stable_time": stable_time,
+                            "is_stable": stable_time >= stability_threshold
+                        }, cls=NumpyJSONEncoder))
+                    except Exception as e:
+                        logger.error(f"Error sending websocket message: {str(e)}")
 
             previous_landmarks = landmarks.copy()
 
@@ -478,6 +479,11 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
         cap.release()
         engine.stop()
         logger.info("WebSocket closed")
+        
+        # Remove from active connections but don't close WebSocket here
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+            logger.info("Removed WebSocket from active connections")
 
 
 @app.websocket("/ws/correction/{pose_name:path}")
@@ -493,9 +499,8 @@ async def websocket_endpoint(websocket: WebSocket, pose_name: str):
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected")
     finally:
-        if websocket in active_connections:
-            active_connections.remove(websocket)
-            logger.info("Removed WebSocket from active connections")
+        if websocket.application_state == WebSocketState.CONNECTED:
+            await websocket.close()
 
 
 @app.websocket("/ws/video")
@@ -503,6 +508,7 @@ async def video_endpoint(websocket: WebSocket):
     await websocket.accept()
     active_connections.add(websocket)
     logger.info("WebSocket connected for live video stream")
+    
     try:
         await process_frame(websocket)
     except WebSocketDisconnect:
@@ -510,9 +516,9 @@ async def video_endpoint(websocket: WebSocket):
     finally:
         if websocket in active_connections:
             active_connections.remove(websocket)
-            logger.info("Removed WEbsocket from active connections")
-    
-    
+            logger.info("Removed WebSocket from active connections")
+
+
 @app.get("/status")
 async def server_status():
     """
@@ -543,4 +549,3 @@ async def server_status():
 #         logger.error(f"WebSocket error: {str(e)}", exc_info=True)
 #     finally:
 #         await websocket.close()
-
