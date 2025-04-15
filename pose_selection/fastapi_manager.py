@@ -13,7 +13,6 @@ def start_fastapi_server():
 
     print(" Starting FastAPI server...")
 
-    # Start FastAPI server as a separate process
     process = subprocess.Popen(
         ["uvicorn", "server:app", "--host", "127.0.0.1", "--port", "8001", "--reload"],
         stdout=subprocess.PIPE,
@@ -33,7 +32,7 @@ def start_fastapi_server():
 def stop_fastapi_server():
     """ Stop the FastAPI server gracefully """
     if not os.path.exists(PID_FILE):
-        print("❌ No FastAPI server is running.")
+        print(" No FastAPI server is running.")
         return
 
     # Read the PID and terminate the process
@@ -44,7 +43,7 @@ def stop_fastapi_server():
         os.kill(pid, signal.SIGTERM)
         print(f" FastAPI server (PID {pid}) stopped.")
     except ProcessLookupError:
-        print("❌ Failed to stop FastAPI server.")
+        print(" Failed to stop FastAPI server.")
     
     # Remove PID file
     os.remove(PID_FILE)

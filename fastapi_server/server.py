@@ -11,23 +11,29 @@ import sys
 import time
 from pose_utils import PoseDetector
 from pose_correction import PoseCorrection
-        
 import pyttsx3
-# Initialize text-to-speech engine
+
+
+
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)  # Set speech rate
 engine.setProperty('volume', 1)  # Set volume
 
+
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
 logging.getLogger("comtypes").setLevel(logging.WARNING)
 
+
+#convert bool_ -> pyhton bool
 class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.bool_):
             return bool(obj)
         return super().default(obj)
+
+
 
 def shutdown_handler(signum, frame):
     logger.info("Shutting down server...")
@@ -35,6 +41,9 @@ def shutdown_handler(signum, frame):
 
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
+
+
+
 
 app = FastAPI()
 
@@ -52,15 +61,11 @@ MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
 POSE_CLASSES_PATH = r"D:\YogaPC\ypc\datasets\pose_classes.pkl"
 
 pose_detector = PoseDetector(model_path=MODEL_PATH, pose_classes_path=POSE_CLASSES_PATH)
-
-
 pose_corrector = PoseCorrection()
 
 
 async def process_frame(websocket: WebSocket):
-    """
-    Captures frames from the camera, processes them, and streams them to the client via WebSocket.
-    """
+
     cap = cv2.VideoCapture(0)
     
     if not cap.isOpened():
@@ -149,10 +154,8 @@ async def process_frame(websocket: WebSocket):
                                     actual_angle = highest_error[1]['actual']
                                     target_angle = highest_error[1]['target']
                                     
-                                    # Generate speech feedback
                                     speech_text = f"Adjust your {angle_name.lower()} to {target_angle:.1f} degrees. Current angle is {actual_angle:.1f} degrees with an error of {error_value:.1f} degrees."
                                     
-                                    # Speak feedback
                                     engine.say(speech_text)
                                     engine.runAndWait()
                                     
@@ -206,7 +209,7 @@ async def process_frame(websocket: WebSocket):
             await detector.print_stable_coordinates()
             
             frame_count +=1
-            if frame_count % 30 == 0:  # Send data more frequently
+            if frame_count % 30 == 0:
                 try:
                     if detector.current_pose:
                         current_angles = detector.calculate_pose_angles()
@@ -270,7 +273,7 @@ async def process_frame(websocket: WebSocket):
 
 async def process_websocket(websocket: WebSocket, pose_name: str):
     frame_count = 0
-    feedback_interval = 10  # every 10th frame at 2 FPS = 5 seconds
+    feedback_interval = 10  
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
@@ -310,7 +313,6 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
             print(f"View Classified: {view_classified}")
             print(f"Ideal Angles Selected: {ideal_angles_selected}")
 
-            # Send frame to frontend
             _, buffer = cv2.imencode(".jpg", frame)
             frame_bytes = buffer.tobytes()
             try:
@@ -354,7 +356,6 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                 for idx, (x, y, z, conf) in landmarks.items():
                     print(f"Landmark {idx}: X={x}, Y={y}, Z={z:.4f}, Confidence={conf:.2f}")
 
-            # Draw keypoints and connections
             for idx, (x, y, z, conf) in landmarks.items():
                 if conf > 0.5:
                     cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
@@ -412,12 +413,10 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                                 logger.error(f"Failed to get ideal angles: {e}")
                                 continue
 
-                        # First feedback
                         if last_frame_for_feedback and fixed_ideal_angles:
                             print("\n=== CALCULATING ANGLES ===")
                             angles = corrector.calculate_pose_angles(last_frame_for_feedback)
                             
-                            # Debug: Print calculated angles for 10th frame
                             if frame_count == 10:
                                 print("\n=== CALCULATED ANGLES FOR FRAME 10 ===")
                                 for angle, value in angles.items():
@@ -428,10 +427,8 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                             print("\n=== FEEDBACK ===")
                             print("Initial feedback sent")
 
-                        # Begin cooldown
                         cooldown_start_time = time.time()
 
-                        # Switch to 2 FPS
                         fps = 2
                         delay = 1 / fps
                         frame_count = 0
@@ -451,7 +448,7 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                     print("\n=== RESUMING FEEDBACK ===")
                     print("User adjustment time complete. Resuming feedback.")
 
-            # Feedback every 5 seconds (i.e., every 10th frame at 2 FPS)
+            # Feedback every 5 seconds (every 10th frame at 2 FPS)
             if stability_done and ideal_angles_selected and view_classified:
                 last_frame_for_feedback = landmarks.copy()
                 angles = corrector.calculate_pose_angles(last_frame_for_feedback)
@@ -516,6 +513,12 @@ async def video_endpoint(websocket: WebSocket):
             logger.info("Removed WEbsocket from active connections")
     
     
+@app.get("/status")
+async def server_status():
+    """
+    Endpoint to check server status.
+    """
+    return {"status": "running", "active_connections": len(active_connections)}
     
 
 
@@ -541,10 +544,3 @@ async def video_endpoint(websocket: WebSocket):
 #     finally:
 #         await websocket.close()
 
-
-@app.get("/status")
-async def server_status():
-    """
-    Endpoint to check server status.
-    """
-    return {"status": "running", "active_connections": len(active_connections)}

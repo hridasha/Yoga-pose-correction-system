@@ -20,6 +20,7 @@ urlpatterns = [
     path('pose/<str:pose_name>/analyze/', views.analyze_pose, name='analyze_pose'),  
     path('live/', views.live_stream, name='live_stream'),
     path('stop_stream/', views.stop_stream, name='stop_stream'),
+    path('start_stream/', views.start_stream, name='start_stream'),
 
 ]
 if settings.DEBUG:

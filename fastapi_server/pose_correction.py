@@ -488,73 +488,72 @@ class PoseCorrection:
             print(f"Error fetching ideal angles: {e}")
             return {}
     
-    async def draw_pose(self, frame: np.ndarray) -> np.ndarray:
-        """Draw pose landmarks and angles on the frame."""
-        if self.stable_coordinates:
-            for idx, landmark in enumerate(self.stable_coordinates):
-                if idx in self.keypoints:
-                    cv2.circle(
-                        frame,
-                        (int(landmark[0]), int(landmark[1])),
-                        5,
-                        (0, 255, 0),
-                        -1
-                    )
+    # async def draw_pose(self, frame: np.ndarray) -> np.ndarray:
+    #     """Draw pose landmarks and angles on the frame."""
+    #     if self.stable_coordinates:
+    #         for idx, landmark in enumerate(self.stable_coordinates):
+    #             if idx in self.keypoints:
+    #                 cv2.circle(
+    #                     frame,
+    #                     (int(landmark[0]), int(landmark[1])),
+    #                     5,
+    #                     (0, 255, 0),
+    #                     -1
+    #                 )
 
-                    cv2.putText(
-                        frame,
-                        self.keypoints.get(idx, ""),
-                        (int(landmark[0]) + 10, int(landmark[1]) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.4,
-                        (255, 255, 255), 
-                        1
-                    )
+    #                 cv2.putText(
+    #                     frame,
+    #                     self.keypoints.get(idx, ""),
+    #                     (int(landmark[0]) + 10, int(landmark[1]) - 10),
+    #                     cv2.FONT_HERSHEY_SIMPLEX,
+    #                     0.4,
+    #                     (255, 255, 255), 
+    #                     1
+    #                 )
 
-        if self.ideal_angles and self.current_pose:
-            try:
-                angles = self.calculate_pose_angles()
-                y_position = 30 
+    #     if self.ideal_angles and self.current_pose:
+    #         try:
+    #             angles = self.calculate_pose_angles()
+    #             y_position = 30 
                 
-                cv2.putText(
-                    frame,
-                    f"Current Pose: {self.current_pose}",
-                    (10, y_position),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2
-                )
-                y_position += 30
+    #             cv2.putText(
+    #                 frame,
+    #                 f"Current Pose: {self.current_pose}",
+    #                 (10, y_position),
+    #                 cv2.FONT_HERSHEY_SIMPLEX,
+    #                 0.7,
+    #                 (255, 255, 255),
+    #                 2
+    #             )
+    #             y_position += 30
                 
-                for angle_name in self.ideal_angles:
-                    if angle_name in angles:
-                        current = angles[angle_name]
-                        ideal = self.ideal_angles[angle_name]
+    #             for angle_name in self.ideal_angles:
+    #                 if angle_name in angles:
+    #                     current = angles[angle_name]
+    #                     ideal = self.ideal_angles[angle_name]
                         
-                        if current < ideal['min']:
-                            color = (0, 0, 255)  # Red for too low
-                        elif current > ideal['max']:
-                            color = (0, 0, 255)  # Red for too high
-                        else:
-                            color = (0, 255, 0)  # Green for within range
+    #                     if current < ideal['min']:
+    #                         color = (0, 0, 255) 
+    #                     elif current > ideal['max']:
+    #                         color = (0, 0, 255) 
+    #                     else:
+    #                         color = (0, 255, 0)  
 
-                        # Display angle with color-coded guidance
-                        cv2.putText(
-                            frame,
-                            f"{angle_name}: {current:.1f}° (Target: {ideal['mean']:.1f}°)",
-                            (10, y_position),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            color,
-                            2
-                        )
-                        y_position += 25
+    #                     cv2.putText(
+    #                         frame,
+    #                         f"{angle_name}: {current:.1f}° (Target: {ideal['mean']:.1f}°)",
+    #                         (10, y_position),
+    #                         cv2.FONT_HERSHEY_SIMPLEX,
+    #                         0.5,
+    #                         color,
+    #                         2
+    #                     )
+    #                     y_position += 25
 
-            except Exception as e:
-                print(f"Error displaying angles: {e}")
+    #         except Exception as e:
+    #             print(f"Error displaying angles: {e}")
 
-        return frame
+    #     return frame
 
     def draw_pose_landmarks(self, frame: np.ndarray, landmarks: List[Tuple[float, float, float, float]]) -> np.ndarray:
         """Draw proper stick figure on the frame with ideal angles and guidance."""
@@ -620,18 +619,7 @@ class PoseCorrection:
                         else:
                             color = (0, 255, 0)  # Green for within range
                             guidance = "Good position!"
-                        
-                        # Display angle information
-                        cv2.putText(
-                            frame,
-                            f"{angle_name}: {current:.1f}°",  # Current angle
-                            (10, y_position),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            color,
-                            2
-                        )
-                        y_position += 20
+        
                         
                         # Display guidance
                         cv2.putText(
@@ -660,10 +648,8 @@ class PoseCorrection:
                 min_value = ideal[angle]['min']
                 max_value = ideal[angle]['max']
                 
-                # Calculate error
                 error = abs(detected_value - ideal_value)
-                
-                # Check if angle is within range
+                # chck range
                 within_range = min_value <= detected_value <= max_value
                 
                 errors[angle] = {
@@ -688,6 +674,7 @@ class PoseCorrection:
                 # Convert joint index to name if it's an integer
                 if isinstance(joint, int):
                     joint_name = self.keypoints.get(joint, str(joint))
+                    joint_name = joint_name.replace('_', ' ')
                 else:
                     joint_name = str(joint).lower().replace('_', ' ')
 
@@ -704,6 +691,8 @@ class PoseCorrection:
                     # Get more specific joint name from keypoints if available
                     if isinstance(joint, int):
                         joint_name = self.keypoints.get(joint, str(joint))
+                        joint_name = str(joint).lower().replace('_', ' ')
+                        
                     else:
                         joint_name = str(joint).lower().replace('_', ' ')
 
@@ -740,9 +729,9 @@ class PoseCorrection:
             for joint, detected, ideal in errors:
                 error = abs(detected - ideal)
                 if error > 10:
-                    # Get joint name from keypoints if it's an index
                     if isinstance(joint, int):
                         joint_name = self.keypoints.get(joint, str(joint))
+                        joint_name = str(joint).lower().replace('_', ' ')
                     else:
                         joint_name = str(joint).lower().replace('_', ' ')
 
@@ -767,7 +756,6 @@ class PoseCorrection:
                         else:
                             feedback.append(f"Shift your weight on {joint_name} slightly back onto your heels. error with {error:.2f}")
                     else:
-                        # For other joints, provide generic feedback
                         if detected < ideal:
                             feedback.append(f"Adjust your {joint_name} to be more open. error with {error:.2f}")
                         else:
@@ -786,165 +774,6 @@ class PoseCorrection:
             print("---------------------------------")
 
         return feedback
-
-    async def process_correction(self, frame: np.ndarray, pose_name: str) -> Dict[int, Tuple[float, float, float, float]]:
-        """Process frame and return pose landmarks."""
-        try:
-            if frame is None:
-                print("\nERROR: Frame is None - Camera connection issue")
-                return {}
-
-            try:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            except Exception as e:
-                print(f"\nERROR: Failed to convert frame to RGB: {str(e)}")
-                return {}
-
-            results = self.pose.process(rgb_frame)
-
-            landmarks_dict = {}
-            if results.pose_landmarks:
-                for i, landmark in enumerate(results.pose_landmarks.landmark):
-                    if i in self.keypoints:
-                        x = int(landmark.x * frame.shape[1])
-                        y = int(landmark.y * frame.shape[0])
-                        z = landmark.z
-                        confidence = landmark.visibility
-                        landmarks_dict[i] = (x, y, z, confidence)
-
-            if not landmarks_dict:
-                print("\nNo keypoints detected")
-                return {}  
-
-            if self.high_fps:
-                print(f"Current FPS: {self.fps:.2f}")
-                print(f"Current Pose: {pose_name}")
-            
-            # if self.pause_stability:
-            #     if time.time() - self.pause_time >= 300:
-            #         self.pause_stability = False
-            #         print("\nResuming stability checking...")
-            #     return landmarks_dict
-            
-            if self.pause_stability:
-                current_time = time.time()
-
-                if current_time - self.pause_time >= 300:
-                    self.pause_stability = False
-                    print("\nResuming stability checking...")
-                else:
-                    # print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time:).2f} seconds")
-                    print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time):.2f} seconds")
-
-                    if current_time - self.last_feedback_time >= self.feedback_interval:
-                        self.last_feedback_time = current_time
-                        print(f"\n[INFO] Providing feedback at {time.strftime('%X')}...")
-
-                        if self.last_frame_for_feedback:
-                            angles = self.calculate_pose_angles(self.last_frame_for_feedback)
-                            errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
-                            self.process_feedback_queue(errors)
-                        else:
-                            print("[WARN] No stable frame available for feedback.")
-
-                    return landmarks_dict 
-
-            if self.previous_landmarks:
-                stable_points = sum(
-                    1 for idx in self.keypoints
-                    if idx in landmarks_dict and idx in self.previous_landmarks
-                    and abs(landmarks_dict[idx][0] - self.previous_landmarks[idx][0]) <= self.tolerance_range
-                    and abs(landmarks_dict[idx][1] - self.previous_landmarks[idx][1]) <= self.tolerance_range
-                )
-
-                print(f"\nStable Points: {stable_points}/{len(self.keypoints)}")
-
-                if stable_points >= 7:
-                    self.stable_time += 1 / self.fps
-                    if self.stable_time >= self.stability_threshold:
-                        print("\nPose Stable!")
-                        print(f"Stable for {self.stable_time:.2f} seconds")
-                        self.stable_coordinates = landmarks_dict.copy()
-
-                        print("-------------------------------------------------->Stable coordinates:",self.stable_coordinates)
-                        
-                        
-                        self.pause_stability = True
-                        self.pause_time = time.time()
-                        
-                        
-                        if self.high_fps:
-                            self.fps = 2
-                            self.high_fps = False
-                            print("\nSwitching to 2 FPS for continuous feedback")
-                            
-                        # angles = self.calculate_pose_angles(landmarks_dict)
-                        # self.ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
-                        # errors = self.calculate_angle_errors(angles, self.ideal_angles)
-                        
-                        
-                        # current_time = time.time()
-                        # if current_time - self.last_feedback_time >= 5:
-                        #     self.last_feedback_time = current_time
-                        #     self.process_feedback_queue(errors)
-                        # Store the last stable frame to use every 5s for feedback
-                        self.last_frame_for_feedback = landmarks_dict.copy()
-
-                        # if not self.ideal_angles_selected:
-                        #     self.fixed_ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
-                        #     self.ideal_angles_selected = True
-                        
-                        # get ideal angles
-                        if not self.ideal_angles_selected:
-                            ideal_data = await self.get_ideal_angles(pose_name, landmarks_dict)
-                            for angle, val in ideal_data.items():
-                                if not all(k in val for k in ("mean", "min", "max")):
-                                    print(f"[ERROR] Incomplete ideal angle data for {angle}: {val}")
-                            self.fixed_ideal_angles = ideal_data
-                            self.ideal_angles_selected = True
-                            
-                        #check time for feedback
-                        current_time = time.time()
-                        if current_time - self.last_feedback_time >= self.feedback_interval:
-                            self.last_feedback_time = current_time
-
-                            #recalculate angles using last saved frame
-                            if self.last_frame_for_feedback:
-                                angles = self.calculate_pose_angles(self.last_frame_for_feedback)
-                                errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
-                                self.process_feedback_queue(errors)
-
-                        if self.high_fps:
-                            print("\nCalculated Angles:")
-                            for angle_name, angle_value in angles.items():
-                                print(f"{angle_name}: {angle_value:.1f} degrees")
-                            
-                            if self.ideal_angles:
-                                print("\nIdeal Angles:")
-                                for angle_name, ideal in self.ideal_angles.items():
-                                    print(f"{angle_name}: Target={ideal['target']:.1f}, Min={ideal['min']:.1f}, Max={ideal['max']:.1f}")
-                            
-                            if errors:
-                                print("\nAngle Errors:")
-                                for angle_name, error in errors.items():
-                                    within_range = "✓" if error['within_range'] else "✗"
-                                    print(f"{angle_name}: Error={error['error']:.1f}°, Actual={error['actual']:.1f}°, Target={error['target']:.1f}°, Range=[{error['min']:.1f}°-{error['max']:.1f}°] ({within_range})")
-                        
-                        self.print_stable_keypoints(landmarks_dict)
-
-                        # Only classify view once
-                        if not self.view_classified:
-                            self.current_view = self.classify_view(self.stable_coordinates)
-                            print(f"View classified as: {self.current_view}")
-                            self.view_classified = True
-
-            self.previous_landmarks = landmarks_dict
-            return landmarks_dict
-
-        except Exception as e:
-            print(f"\nERROR in process_correction: {str(e)}")
-            return {}
-
 
 
     def process_feedback_queue(self, errors):
@@ -974,14 +803,13 @@ class PoseCorrection:
                     self.error_tracking[angle_name]['ideal'] = error['target']
                 new_errors[angle_name] = self.error_tracking[angle_name]
 
-        # Find top 3 joints with the highest average error
+        # joints with the highest average error
         sorted_errors = sorted(
             [(k, v) for k, v in new_errors.items()],
             key=lambda x: x[1]['error_sum'] / x[1]['count'],
             reverse=True
         )
-
-        # Prepare simplified error dictionary for generate_feedback()
+        # top 1 error
         top_errors = {}
         for angle_name, stats in sorted_errors[:1]:
             top_errors[angle_name] = {
@@ -990,12 +818,11 @@ class PoseCorrection:
                 "ideal": stats['ideal']
             }
 
-        # Generate feedback only for the top 3 highest errors
         feedback = self.generate_feedback(top_errors)
         
         # Only speak feedback if enough time has passed since last speech
         if not self.last_correction or (current_time - self.last_correction_time > self.feedback_cooldown):
-            # Update the last speech time for all tracked errors
+            # Update the last speech time 
             for angle_name in self.error_tracking:
                 self.error_tracking[angle_name]['last_speech_time'] = current_time
             
@@ -1003,7 +830,6 @@ class PoseCorrection:
             self.last_correction = feedback
             self.last_correction_time = current_time
         
-        # Print and send feedback only if new feedback exists
         if top_errors:
             self.feedback_queue = [
                 {
@@ -1012,48 +838,17 @@ class PoseCorrection:
                     'last_error': self.error_tracking[joint]['last_error']
                 } for joint in top_errors
             ]
-
-            # Raw Feedback Summary
+            
+            
             print("\nPose Correction Feedback:")
             for item in self.feedback_queue:
                 print(f"- {item['angle']}: Average Error = {item['avg_error']:.1f}°, Last Error = {item['last_error']:.1f}°")
 
-        # If all joints are within range, clear feedback and reset tracking
+        # all joints within range, clear feedback and reset tracking
         if all(error['within_range'] for error in errors.values()):
             self.feedback_queue.clear()
             self.error_tracking.clear()
             print("\nPose is correct! No further corrections needed.")
-
-
-    def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, float]) -> Dict[str, float]:
-        """Calculate errors between calculated angles and ideal angles."""
-        if not angles or not ideal_angles:
-            return {}
-
-        errors = {}
-        for angle_name, angle_value in angles.items():
-            if angle_name in ideal_angles:
-                ideal = ideal_angles[angle_name]
-                target = ideal['mean']
-                min_angle = ideal['min']
-                max_angle = ideal['max']
-                
-                # Calculate error
-                error = abs(angle_value - target)
-                
-                # Check if angle is within range
-                within_range = min_angle <= angle_value <= max_angle
-                
-                errors[angle_name] = {
-                    'error': error,
-                    'within_range': within_range,
-                    'actual': angle_value,
-                    'target': target,
-                    'min': min_angle,
-                    'max': max_angle
-                }
-        
-        return errors
 
     def calculate_fps(self):
         """Dynamically calculate FPS based on frame time."""
@@ -1067,27 +862,9 @@ class PoseCorrection:
             self.fps = 30.0
 
         return self.fps
+    
     def calculate_angle_errors(self, angles: Dict[str, float], ideal_angles: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
-        """
-        Calculate errors between calculated angles and ideal angles.
-        
-        Args:
-            angles: Dictionary of calculated angles
-            ideal_angles: Dictionary of ideal angles with mean, min, max values
-            
-        Returns:
-            Dictionary of angle errors with the following structure:
-            {
-                "angle_name": {
-                    "error": float,        # Difference between actual and target
-                    "actual": float,       # Actual angle value
-                    "target": float,       # Target angle value
-                    "min": float,          # Minimum acceptable angle
-                    "max": float,          # Maximum acceptable angle
-                    "within_range": bool   # Whether angle is within acceptable range
-                }
-            }
-        """
+
         errors = {}
         
         if not angles or not ideal_angles:
@@ -1109,3 +886,161 @@ class PoseCorrection:
                 }
         
         return errors
+
+    # async def process_correction(self, frame: np.ndarray, pose_name: str) -> Dict[int, Tuple[float, float, float, float]]:
+    #     """Process frame and return pose landmarks."""
+    #     try:
+    #         if frame is None:
+    #             print("\nERROR: Frame is None - Camera connection issue")
+    #             return {}
+
+    #         try:
+    #             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #         except Exception as e:
+    #             print(f"\nERROR: Failed to convert frame to RGB: {str(e)}")
+    #             return {}
+
+    #         results = self.pose.process(rgb_frame)
+
+    #         landmarks_dict = {}
+    #         if results.pose_landmarks:
+    #             for i, landmark in enumerate(results.pose_landmarks.landmark):
+    #                 if i in self.keypoints:
+    #                     x = int(landmark.x * frame.shape[1])
+    #                     y = int(landmark.y * frame.shape[0])
+    #                     z = landmark.z
+    #                     confidence = landmark.visibility
+    #                     landmarks_dict[i] = (x, y, z, confidence)
+
+    #         if not landmarks_dict:
+    #             print("\nNo keypoints detected")
+    #             return {}  
+
+    #         if self.high_fps:
+    #             print(f"Current FPS: {self.fps:.2f}")
+    #             print(f"Current Pose: {pose_name}")
+            
+    #         # if self.pause_stability:
+    #         #     if time.time() - self.pause_time >= 300:
+    #         #         self.pause_stability = False
+    #         #         print("\nResuming stability checking...")
+    #         #     return landmarks_dict
+            
+    #         if self.pause_stability:
+    #             current_time = time.time()
+
+    #             if current_time - self.pause_time >= 300:
+    #                 self.pause_stability = False
+    #                 print("\nResuming stability checking...")
+    #             else:
+    #                 # print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time:).2f} seconds")
+    #                 print(f"\n[INFO] Time since last feedback: {abs(current_time - self.last_feedback_time):.2f} seconds")
+
+    #                 if current_time - self.last_feedback_time >= self.feedback_interval:
+    #                     self.last_feedback_time = current_time
+    #                     print(f"\n[INFO] Providing feedback at {time.strftime('%X')}...")
+
+    #                     if self.last_frame_for_feedback:
+    #                         angles = self.calculate_pose_angles(self.last_frame_for_feedback)
+    #                         errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
+    #                         self.process_feedback_queue(errors)
+    #                     else:
+    #                         print("[WARN] No stable frame available for feedback.")
+
+    #                 return landmarks_dict 
+
+    #         if self.previous_landmarks:
+    #             stable_points = sum(
+    #                 1 for idx in self.keypoints
+    #                 if idx in landmarks_dict and idx in self.previous_landmarks
+    #                 and abs(landmarks_dict[idx][0] - self.previous_landmarks[idx][0]) <= self.tolerance_range
+    #                 and abs(landmarks_dict[idx][1] - self.previous_landmarks[idx][1]) <= self.tolerance_range
+    #             )
+
+    #             print(f"\nStable Points: {stable_points}/{len(self.keypoints)}")
+
+    #             if stable_points >= 7:
+    #                 self.stable_time += 1 / self.fps
+    #                 if self.stable_time >= self.stability_threshold:
+    #                     print("\nPose Stable!")
+    #                     print(f"Stable for {self.stable_time:.2f} seconds")
+    #                     self.stable_coordinates = landmarks_dict.copy()
+
+    #                     print("-------------------------------------------------->Stable coordinates:",self.stable_coordinates)
+                        
+                        
+    #                     self.pause_stability = True
+    #                     self.pause_time = time.time()
+                        
+                        
+    #                     if self.high_fps:
+    #                         self.fps = 2
+    #                         self.high_fps = False
+    #                         print("\nSwitching to 2 FPS for continuous feedback")
+                            
+    #                     # angles = self.calculate_pose_angles(landmarks_dict)
+    #                     # self.ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
+    #                     # errors = self.calculate_angle_errors(angles, self.ideal_angles)
+                        
+                        
+    #                     # current_time = time.time()
+    #                     # if current_time - self.last_feedback_time >= 5:
+    #                     #     self.last_feedback_time = current_time
+    #                     #     self.process_feedback_queue(errors)
+    #                     # Store the last stable frame to use every 5s for feedback
+    #                     self.last_frame_for_feedback = landmarks_dict.copy()
+
+    #                     # if not self.ideal_angles_selected:
+    #                     #     self.fixed_ideal_angles = await self.get_ideal_angles(pose_name, landmarks_dict)
+    #                     #     self.ideal_angles_selected = True
+                        
+    #                     # get ideal angles
+    #                     if not self.ideal_angles_selected:
+    #                         ideal_data = await self.get_ideal_angles(pose_name, landmarks_dict)
+    #                         for angle, val in ideal_data.items():
+    #                             if not all(k in val for k in ("mean", "min", "max")):
+    #                                 print(f"[ERROR] Incomplete ideal angle data for {angle}: {val}")
+    #                         self.fixed_ideal_angles = ideal_data
+    #                         self.ideal_angles_selected = True
+                            
+    #                     #check time for feedback
+    #                     current_time = time.time()
+    #                     if current_time - self.last_feedback_time >= self.feedback_interval:
+    #                         self.last_feedback_time = current_time
+
+    #                         #recalculate angles using last saved frame
+    #                         if self.last_frame_for_feedback:
+    #                             angles = self.calculate_pose_angles(self.last_frame_for_feedback)
+    #                             errors = self.calculate_angle_errors(angles, self.fixed_ideal_angles)
+    #                             self.process_feedback_queue(errors)
+
+    #                     if self.high_fps:
+    #                         print("\nCalculated Angles:")
+    #                         for angle_name, angle_value in angles.items():
+    #                             print(f"{angle_name}: {angle_value:.1f} degrees")
+                            
+    #                         if self.ideal_angles:
+    #                             print("\nIdeal Angles:")
+    #                             for angle_name, ideal in self.ideal_angles.items():
+    #                                 print(f"{angle_name}: Target={ideal['target']:.1f}, Min={ideal['min']:.1f}, Max={ideal['max']:.1f}")
+                            
+    #                         if errors:
+    #                             print("\nAngle Errors:")
+    #                             for angle_name, error in errors.items():
+    #                                 within_range = "✓" if error['within_range'] else "✗"
+    #                                 print(f"{angle_name}: Error={error['error']:.1f}°, Actual={error['actual']:.1f}°, Target={error['target']:.1f}°, Range=[{error['min']:.1f}°-{error['max']:.1f}°] ({within_range})")
+                        
+    #                     self.print_stable_keypoints(landmarks_dict)
+
+    #                     # Only classify view once
+    #                     if not self.view_classified:
+    #                         self.current_view = self.classify_view(self.stable_coordinates)
+    #                         print(f"View classified as: {self.current_view}")
+    #                         self.view_classified = True
+
+    #         self.previous_landmarks = landmarks_dict
+    #         return landmarks_dict
+
+    #     except Exception as e:
+    #         print(f"\nERROR in process_correction: {str(e)}")
+    #         return {}

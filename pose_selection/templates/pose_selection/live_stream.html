@@ -282,7 +282,6 @@
                             const data = JSON.parse(event.data);
                             console.log('Received data:', data);
 
-                            // Log if any required data is missing
                             if (!data) {
                                 console.error('No data received');
                                 return;
@@ -417,7 +416,7 @@
             return;
         }
 
-        connectWebSocket();  // Create a new WebSocket connection
+        connectWebSocket();  
         isStreaming = true;
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('stopButton').style.display = 'inline';
@@ -427,6 +426,8 @@
         isStreaming = false;
         if (websocket) {
             websocket.close();
+            websocket = null;
+            console.log('WebSocket closed');
         }
         document.getElementById('startButton').style.display = 'inline';
         document.getElementById('stopButton').style.display = 'none';

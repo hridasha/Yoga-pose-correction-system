@@ -50,7 +50,6 @@ def live_stream(request):
     """ Django view to render live stream """
 
     try:
-        # Check FastAPI server status
         response = requests.get("http://127.0.0.1:8001/status")
         fastapi_status = "Running" if response.status_code == 200 else "Not Running"
     except requests.ConnectionError:
@@ -66,7 +65,12 @@ def stop_stream(request):
     return JsonResponse({"status": "stopped"})
 
 
-
+def start_stream(request):
+    """ AJAX call to start the FastAPI server """
+    
+    start_fastapi_server()
+    
+    return JsonResponse({"status": "started"})
 
 
 def home(request):
@@ -598,7 +602,6 @@ def upload_image_for_pose(request):
         try:
             print("=== Image upload processing started ===")
             
-            # Save the image
             image = request.FILES['image']
             image_name = f"{int(time.time())}-{image.name}"
             
@@ -606,7 +609,6 @@ def upload_image_for_pose(request):
                 for chunk in image.chunks():
                     destination.write(chunk)
 
-            # Process the image
             image_path = default_storage.path(f"uploads/{image_name}")
             image = cv2.imread(image_path)
             if image is None:
@@ -668,11 +670,9 @@ def upload_image_for_pose(request):
                     predicted_pose = pose_classes.get(predicted_label, "Unknown Pose")
                     print(f"Predicted pose: {predicted_pose}")
 
-                    # Get the actual angles from landmarks
                     actual_angles = angles
                     print(f"Actual angles: {actual_angles}")
 
-                    # Classify the view
                     row = {
                         'Left_Shoulder_Angle': actual_angles.get('left_shoulder', 0),
                         'Left_Hip_Angle': actual_angles.get('left_hip', 0),
