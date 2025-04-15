@@ -11,7 +11,7 @@
         /* Soft Beige */
         color: #2B3241;
         /* Deep Navy Gray */
-        font-family: 'Poppins',  sans-serif;
+        font-family: 'Poppins', sans-serif;
     }
 
     .header {
@@ -107,12 +107,14 @@
     }
 
     .angles-container,
-    .corrections-container {
+    .corrections-container,
+    .errors-container {
         margin-bottom: 20px;
     }
 
     .angles-list,
-    .corrections-list {
+    .corrections-list,
+    .errors-list {
         margin-top: 10px;
         padding: 10px;
         background-color: #2B3241;
@@ -121,18 +123,58 @@
     }
 
     .angle-item,
-    .correction-item {
+    .correction-item,
+    .error-item {
         margin: 5px 0;
         padding: 5px;
         border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .angle-item {
         background-color: rgba(72, 187, 120, 0.2);
     }
 
-    .correction-item {
+    .correction-item,
+    .error-item {
         background-color: rgba(229, 62, 62, 0.2);
+    }
+
+    .error-item.within-range {
+        background-color: rgba(72, 187, 120, 0.2);
+    }
+
+    .error-value {
+        font-weight: bold;
+        color: #e53e3e;
+    }
+
+    .error-value.within-range {
+        color: #48bb78;
+    }
+
+    .status-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 10px;
+    }
+
+    .status-indicator.out-of-range {
+        background-color: #e53e3e;
+    }
+
+    .status-indicator.within-range {
+        background-color: #48bb78;
+    }
+
+    .no-data {
+        color: #B0A18B;
+        text-align: center;
+        padding: 10px;
     }
 
     .no-corrections {
@@ -167,27 +209,31 @@
 
     <div class="instructions">
         <h3>Instructions</h3>
-        <p>1. Click "Start Stream" to begin the video feed</p>
-        <p>2. Position yourself in front of the camera</p>
-        <p>3. Click "Stop Stream" when you're done</p>
+        <p>Click "Start Stream" to begin the video feed</p>
+        <p>Position yourself in front of the camera</p>
+        <p>Click "Stop Stream" when you're done</p>
     </div>
-
     <div class="instructions">
         <h3>Current Pose Analysis</h3>
         <div id="poseAnalysis">
-            <div class = "pose-name" >
+            <div class="pose-name">
                 <h4>Pose Name</h4>
-                <div id="poseName" class="pose-name-text">.</div>
+                <div id="poseName" class="pose-name-text">No pose detected</div>
             </div>
-        
+
             <div class="angles-container">
                 <h4>Ideal Angles</h4>
                 <div id="idealAngles" class="angles-list"></div>
-
             </div>
+
+            <div class="errors-container">
+                <h4>Angle Errors</h4>
+                <div id="errorsList" class="errors-list"></div>
+            </div>
+
             <div class="corrections-container">
                 <h4>Corrections Needed</h4>
-                <div id="corrections" class="corrections-list">
+                <div id="correctionsList" class="corrections-list">
                     <div id="noCorrections" class="no-corrections" style="display: none;">
                         <span class="checkmark">✓</span>
                         <span class="feedback-text">Great job! Your alignment is excellent.</span>
@@ -196,7 +242,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <script>
@@ -235,38 +280,114 @@
                     try {
                         if (typeof event.data === 'string') {
                             const data = JSON.parse(event.data);
-                            updatePoseAnalysis(data);
+                            console.log('Received data:', data);
+
+                            // Log if any required data is missing
+                            if (!data) {
+                                console.error('No data received');
+                                return;
+                            }
+
+                            // Update pose name
+                            const poseNameDiv = document.getElementById('poseName');
+                            if (poseNameDiv) {
+                                poseNameDiv.textContent = data.pose_name || 'No pose detected';
+                            }
+
+                            // Update ideal angles
+                            const idealAnglesDiv = document.getElementById('idealAngles');
+                            if (idealAnglesDiv) {
+                                if (data.idealAngles) {
+                                    idealAnglesDiv.innerHTML = '';
+                                    Object.entries(data.idealAngles).forEach(([angle, values]) => {
+                                        if (!values) {
+                                            console.error(`No values for angle ${angle}`);
+                                            return;
+                                        }
+                                        const item = document.createElement('div');
+                                        item.className = 'angle-item';
+                                        item.innerHTML = `
+                                            <span class="angle-name">${angle}</span>
+                                            <span class="angle-value">${values.mean.toFixed(1)}°</span>
+                                            <span class="angle-range">(${values.min.toFixed(1)}°-${values.max.toFixed(1)}°)</span>
+                                        `;
+                                        idealAnglesDiv.appendChild(item);
+                                    });
+                                } else {
+                                    idealAnglesDiv.innerHTML = '<div class="no-data">No ideal angles available</div>';
+                                }
+                            }
+
+                            // Update errors
+                            const errorsList = document.getElementById('errorsList');
+                            if (errorsList) {
+                                if (data.errors) {
+                                    errorsList.innerHTML = '';
+                                    Object.entries(data.errors).forEach(([angle, error]) => {
+                                        if (!error) {
+                                            console.error(`No error data for angle ${angle}`);
+                                            return;
+                                        }
+                                        const item = document.createElement('div');
+                                        item.className = `error-item ${error.within_range ? 'within-range' : 'out-of-range'}`;
+                                        item.innerHTML = `
+                                            <span class="angle-name">${angle}</span>
+                                            <span class="error-value ${error.within_range ? 'within-range' : 'out-of-range'}">
+                                                ${error.error.toFixed(1)}°
+                                            </span>
+                                            <span class="status-indicator ${error.within_range ? 'within-range' : 'out-of-range'}"></span>
+                                            <span class="error-details">
+                                                Actual: ${error.actual.toFixed(1)}°, Target: ${error.target.toFixed(1)}°
+                                            </span>
+                                        `;
+                                        errorsList.appendChild(item);
+                                    });
+                                } else {
+                                    errorsList.innerHTML = '<div class="no-data">No errors detected</div>';
+                                }
+                            }
+
+                            // Update corrections
+                            const correctionsList = document.getElementById('correctionsList');
+                            const noCorrectionsDiv = document.getElementById('noCorrections');
+                            
+                            if (correctionsList && data.errors) {
+                                correctionsList.innerHTML = '';
+                                Object.entries(data.errors)
+                                    .filter(([_, error]) => !error.within_range)
+                                    .forEach(([angle, error]) => {
+                                        if (!error) {
+                                            console.error(`No error data for angle ${angle}`);
+                                            return;
+                                        }
+                                        const item = document.createElement('div');
+                                        item.className = 'correction-item';
+                                        item.innerHTML = `
+                                            ${angle}: ${error.error.toFixed(1)}° off (Actual: ${error.actual.toFixed(1)}°, Target: ${error.target.toFixed(1)}°)
+                                        `;
+                                        correctionsList.appendChild(item);
+                                    });
+                                noCorrectionsDiv.style.display = 'none';
+                            } else {
+                                correctionsList.innerHTML = '';
+                                noCorrectionsDiv.style.display = 'flex';
+                            }
                         } else {
+                            // Handle video frame
                             const arrayBuffer = event.data;
                             const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
                             const url = URL.createObjectURL(blob);
 
                             const img = new Image();
                             img.onload = () => {
-                                ctx.fillStyle = 'black';
-                                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                                const aspectRatio = img.width / img.height;
-                                let drawWidth = canvas.width;
-                                let drawHeight = canvas.height;
-
-                                if (img.width > canvas.width) {
-                                    drawHeight = canvas.width / aspectRatio;
-                                }
-                                if (img.height > canvas.height) {
-                                    drawWidth = canvas.height * aspectRatio;
-                                }
-
-                                const x = (canvas.width - drawWidth) / 2;
-                                const y = (canvas.height - drawHeight) / 2;
-
-                                ctx.drawImage(img, x, y, drawWidth, drawHeight);
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                                 URL.revokeObjectURL(url);
                             };
                             img.src = url;
                         }
                     } catch (error) {
-                        console.error('Error processing frame:', error);
+                        console.error('Error processing message:', error);
+                        console.error('Message data:', event.data);
                     }
                 }
             };
@@ -295,13 +416,13 @@
             console.log("WebSocket is already open.");
             return;
         }
-    
+
         connectWebSocket();  // Create a new WebSocket connection
         isStreaming = true;
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('stopButton').style.display = 'inline';
     }
-    
+
     function stopStream() {
         isStreaming = false;
         if (websocket) {
@@ -322,37 +443,6 @@
         } catch (error) {
             document.getElementById('serverStatus').textContent = 'Not Running';
             document.getElementById('serverStatus').classList.add('not-running');
-        }
-    }
-
-    function updatePoseAnalysis(data) {
-        const idealAnglesDiv = document.getElementById('idealAngles');
-        const correctionsDiv = document.getElementById('corrections');
-        const noCorrectionsDiv = document.getElementById('noCorrections');
-        idealAnglesDiv.innerHTML = '';
-        correctionsDiv.innerHTML = '';
-
-        if (data.idealAngles) {
-            Object.entries(data.idealAngles).forEach(([joint, angles]) => {
-                const angleItem = document.createElement('div');
-                angleItem.className = 'angle-item';
-                angleItem.textContent = `${joint}: ${angles.min}° - ${angles.max}°`;
-                idealAnglesDiv.appendChild(angleItem);
-            });
-        }
-
-        // Update corrections
-        if (data.corrections) {
-            data.corrections.forEach(correction => {
-                const correctionItem = document.createElement('div');
-                correctionItem.className = 'correction-item';
-                correctionItem.textContent = correction;
-                correctionsDiv.appendChild(correctionItem);
-            });
-            noCorrectionsDiv.style.display = 'none';
-        }
-        else{
-            noCorrectionsDiv.style.display = 'flex';
         }
     }
 

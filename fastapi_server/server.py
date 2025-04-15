@@ -206,29 +206,35 @@ async def process_frame(websocket: WebSocket):
             await detector.print_stable_coordinates()
             
             frame_count +=1
-            if frame_count % 150 == 0:
-                await websocket.send_text(json.dumps({
-                    "pose_name": detector.current_pose,
-                    "landmarks": landmarks if landmarks is not None else None,
-                    "detected_pose": detector.current_pose,
-                    "detected_view": detector.current_view,
-                    "idealAngles": await detector.get_ideal_angles(detector.current_pose) if detector.current_pose else None,
-                    "errors": detector.calculate_error(detector.calculate_pose_angles(),await detector.get_ideal_angles(detector.current_pose)) if detector.current_pose else None
-                }, cls=NumpyJSONEncoder))
-            # if not detected_pose or not detected_view:
-            #     if detector.current_pose and detector.current_view:
-            #         detected_pose = True
-            #         detected_view = True
-            #         angles = detector.calculate_pose_angles()
-            #         ideal_angles = await detector.get_ideal_angles(detector.current_pose)
-            #         if ideal_angles:
-            #             errors = detector.calculate_error(angles, ideal_angles)
-            #             feedback = detector.generate_feedback(errors)
+            if frame_count % 30 == 0:  # Send data more frequently
+                try:
+                    if detector.current_pose:
+                        current_angles = detector.calculate_pose_angles()
+                        if current_angles:
+                            ideal_angles = await detector.get_ideal_angles(detector.current_pose)
+                            if ideal_angles:
+                                errors = detector.calculate_angle_errors(current_angles, ideal_angles)
+                            else:
+                                errors = None
+                        else:
+                            errors = None
+                    else:
+                        current_angles = None
+                        ideal_angles = None
+                        errors = None
 
-            #             await websocket.send_text(json.dumps({
-            #                 "idealAngles": ideal_angles,
-            #                 "corrections": feedback if feedback else "NO FEEDBACK",
-            #             }))
+                    await websocket.send_text(json.dumps({
+                        "pose_name": detector.current_pose,
+                        "landmarks": landmarks if landmarks is not None else None,
+                        "detected_pose": detector.current_pose,
+                        "detected_view": detector.current_view,
+                        "idealAngles": ideal_angles,
+                        "errors": errors,
+                        "current_angles": current_angles
+                    }, cls=NumpyJSONEncoder))
+                except Exception as e:
+                    print(f"Error sending data: {e}")
+                    continue
 
             _, buffer = cv2.imencode(".jpg", frame, 
                                      [int(cv2.IMWRITE_JPEG_QUALITY), 90, 
@@ -459,7 +465,7 @@ async def process_websocket(websocket: WebSocket, pose_name: str):
                         "landmarks": landmarks,
                         "correction": corrector.generate_feedback(landmarks),
                         "idealAngles": fixed_ideal_angles,
-                        "errors": errors if ideal_angles_selected else None,
+                        "errors": errors,
                         "stable_points": stable_points,
                         "stable_time": stable_time,
                         "is_stable": stable_time >= stability_threshold

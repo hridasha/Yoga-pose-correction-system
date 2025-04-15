@@ -121,13 +121,13 @@ class PoseCorrection:
         self.feedback_queue = []
         self.error_tracking = {}
         self.high_fps = True  
-        self.view_classified = False  # Add this flag
+        self.view_classified = False 
 
     def text_to_speech(self, text):
         """Convert text to speech."""
         engine = pyttsx3.init()
-        engine.setProperty('rate', 150)  # Adjust speech rate (words per minute)
-        engine.setProperty('volume', 1)  # Set volume level (0.0 to 1.0)
+        engine.setProperty('rate', 150) 
+        engine.setProperty('volume', 1) 
         engine.say(text)
         engine.runAndWait()
 
@@ -425,20 +425,16 @@ class PoseCorrection:
                 print("No angles calculated for current pose")
                 return {}
 
-            # First try original and flipped view
             original_angles = await get_angles(pose_name, self.current_view, False)
             flipped_angles = await get_angles(pose_name, self.current_view, True)
 
-            # If either view exists, calculate errors
             if original_angles or flipped_angles:
                 original_errors = self.calculate_error(current_angles, original_angles) if original_angles else None
                 flipped_errors = self.calculate_error(current_angles, flipped_angles) if flipped_angles else None
 
-                # Calculate total errors if angles exist
                 original_total_error = sum(abs(error['error']) for error in original_errors.values()) if original_errors else float('inf')
                 flipped_total_error = sum(abs(error['error']) for error in flipped_errors.values()) if flipped_errors else float('inf')
 
-                # Choose the better view between original and flipped
                 if original_total_error <= flipped_total_error:
                     print(f"Using original view: Error={original_total_error:.2f}")
                     return original_angles
@@ -446,7 +442,6 @@ class PoseCorrection:
                     print(f"Using flipped view: Error={flipped_total_error:.2f}")
                     return flipped_angles
 
-            # If neither view exists, try all views in the database
             @sync_to_async
             def get_all_views(pose_name):
                 try:
@@ -463,13 +458,12 @@ class PoseCorrection:
                 print(f"No views found in database for pose: {pose_name}")
                 return {}
 
-            # Try all views and find the best match
+            #  all views and find the best match
             best_view = None
             best_angles = None
             min_error = float('inf')
 
             for view in all_views:
-                # Try both original and flipped versions
                 for is_flipped in [False, True]:
                     angles = await get_angles(pose_name, view, is_flipped)
                     if angles:
@@ -533,13 +527,11 @@ class PoseCorrection:
                 )
                 y_position += 30
                 
-                # Display each angle's guidance
                 for angle_name in self.ideal_angles:
                     if angle_name in angles:
                         current = angles[angle_name]
                         ideal = self.ideal_angles[angle_name]
                         
-                        # Determine guidance color
                         if current < ideal['min']:
                             color = (0, 0, 255)  # Red for too low
                         elif current > ideal['max']:

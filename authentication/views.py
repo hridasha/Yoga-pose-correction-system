@@ -38,10 +38,8 @@ def register(request):
         form = RegisterForm(request.POST)
         
         if form.is_valid():
-            # Save the user
             user = form.save()
 
-            # Authenticate and log in the user
             authenticated_user = authenticate(
                 request, 
                 username=user.username, 
@@ -115,10 +113,9 @@ def profile(request):
         user.last_name = request.POST.get('last_name', '')
         user.age = request.POST.get('age', '')
 
-        # Get selected photo ID from form
         selected_photo_id = request.POST.get('selected_photo')
         if selected_photo_id:
-            user.profile_photo = f'images/profile{selected_photo_id}.png'  # Adjust path as needed
+            user.profile_photo = f'images/profile{selected_photo_id}.png'  
 
         user.save()
         messages.success(request, 'Profile updated successfully!')
@@ -162,7 +159,6 @@ def password_reset_request(request):
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             
-            # Send reset email
             subject = "Password Reset Requested"
             email_template_name = "authentication/password_reset_email.html"
             c = {
