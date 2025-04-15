@@ -82,6 +82,7 @@ async def process_frame(websocket: WebSocket):
     detected_pose = False
     detected_view = False
     frame_count=0
+    classification_printed = False
 
     try:
         while websocket.application_state == WebSocketState.CONNECTED:
@@ -192,19 +193,22 @@ async def process_frame(websocket: WebSocket):
                         detector.stable_time = 0.0
                         await detector.print_stable_coordinates()
 
-                        if not detector.detected_pose and not detector.detected_view:
+                        if not detector.detected_pose and not classification_printed:
                             pose_class, confidence = await detector.classify_pose(landmarks)
                             print(f"\n[INFO] Pose Classified: {pose_class} (Confidence: {confidence:.2f})")
                             detector.current_pose = pose_class
                             detector.detected_pose = True
-
+                            classification_printed = True
+                        if not detector.detected_view and not classification_printed:
                             detector.current_view = detector.classify_view(landmarks)
                             print(f"[INFO] View Classified: {detector.current_view}")
                             detector.detected_view = True
+                            classification_printed = True
 
                             detector.fixed_ideal_angles = await detector.get_ideal_angles(detector.current_pose)
                             detector.ideal_angles_selected = True
-                            print("\n[INFO] Ideal angles loaded.")
+                            detector.calculated_best_match = True  # Set this here since we've done all calculations
+                            print("\n[INFO] Ideal angles loaded and best match calculated.")
 
             detector.previous_landmarks = landmarks
 
@@ -237,7 +241,7 @@ async def process_frame(websocket: WebSocket):
                         "pose_name": detector.current_pose,
                         "landmarks": landmarks if landmarks is not None else None,
                         "detected_pose": detector.current_pose,
-                        "detected_view": detector.current_view,
+                        "detected_view": detector.current_view if detector.detected_view else None,
                         "idealAngles": ideal_angles,
                         "errors": errors,
                         "current_angles": current_angles
