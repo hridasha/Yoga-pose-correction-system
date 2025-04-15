@@ -15,7 +15,7 @@ import time
 from .fastapi_manager import start_fastapi_server, stop_fastapi_server
 import tensorflow as tf
 import pickle
-import mediapipe as 
+import mediapipe as mp
 from pathlib import Path
 
 # MODEL_PATH = r"D:\YogaPC\ypc\datasets\final_student_model_35.keras"
