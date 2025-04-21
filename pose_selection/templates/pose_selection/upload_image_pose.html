@@ -153,7 +153,6 @@
     <div id="analysisResults" class="analysis-results">
         <h2>Analysis Results</h2>
 
-
         <div class="image-container">
             <h3>Annotated Image</h3>
             <img id="annotatedImage" src="" alt="Annotated Pose Image">
@@ -172,10 +171,7 @@
             <div id="correctionsList"></div>
         </div>
 
-        <div class="errors">
-            <h3>Detailed Errors</h3>
-            <div id="errorsList"></div>
-        </div>
+  
     </div>
 </div>
 
@@ -200,8 +196,6 @@
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                document.getElementById('originalImage').src = e.target.result;
-
                 // Show toast
                 const toast = document.getElementById('uploadToast');
                 toast.classList.add('show');
@@ -238,7 +232,6 @@
                 errorDiv.textContent = data.error;
                 errorDiv.style.display = 'block';
             } else {
-                document.getElementById('originalImage').src = data.image_url;
                 document.getElementById('annotatedImage').src = data.annotated_image_url;
                 document.getElementById('predictedPose').textContent = data.predicted_pose;
                 document.getElementById('viewClassification').textContent = data.view;
@@ -248,15 +241,6 @@
                 document.getElementById('correctionsList').innerHTML = data.corrections.map(correction =>
                     `<div class="correction-item">${correction}</div>`
                 ).join('');
-
-                const errorsList = document.getElementById('errorsList');
-                errorsList.innerHTML = Object.entries(data.errors).map(([joint, error]) => `
-                    <div class="error-item">
-                        <strong>${joint.replace('_', ' ')}:</strong>
-                        <span>Error: ${error.error.toFixed(1)}°</span>
-                        <span>Direction: ${error.direction}</span>
-                    </div>
-                `).join('');
 
                 resultsDiv.style.display = 'block';
                 resultsDiv.scrollIntoView({ behavior: 'smooth' });

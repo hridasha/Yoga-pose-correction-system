@@ -167,157 +167,93 @@ def calculate_error(actual, ideal):
     return errors
 
 def upload_image(request, pose_name):
-    """Handle image upload and redirect to analysis with proper parameters."""
+    """Handle image upload, process it, and return analysis results."""
     if request.method == 'POST' and request.FILES.get('image'):
-        image = request.FILES['image']
-        image_name = f"{int(time.time())}-{image.name}"
-        
-        # Save image
-        with default_storage.open(f"uploads/{image_name}", 'wb+') as destination:
-            for chunk in image.chunks():
-                destination.write(chunk)
+        try:
+            # Save the uploaded image
+            image = request.FILES['image']
+            image_path = os.path.join(settings.MEDIA_ROOT, 'uploads', image.name)
+            with open(image_path, 'wb') as f:
+                for chunk in image.chunks():
+                    f.write(chunk)
 
-        # Return the redirect URL as plain text
-        return HttpResponse(
-            reverse('analyze_pose', kwargs={'pose_name': pose_name}) + f'?image_name={image_name}'
-        )
-    return render(request, 'pose_selection/upload_image.html', {
-        'pose_name': pose_name
-    })
+            # Process the image using MediaPipe
+            mp_pose = mp.solutions.pose
+            with mp_pose.Pose(static_image_mode=True) as pose:
+                image = cv2.imread(image_path)
+                results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-def classify_view(row):
-    """
-    Further Enhanced View Classification with more sub-categories.
-    """
-    try:
-        shoulder_angle = float(row['Left_Shoulder_Angle'])
-        hip_angle = float(row['Left_Hip_Angle'])
-        knee_angle = float(row['Left_Knee_Angle'])
+                if results.pose_landmarks:
+                    # Calculate angles
+                    angles = extract_features(results.pose_landmarks.landmark, mp_pose)
+                    
+                    # Get ideal angles for the pose
+                    try:
+                        pose_obj = YogaPoseDetails.objects.get(pose_name=pose_name)
+                        ideal_angles = {
+                            angle: float(value) 
+                            for angle, value in pose_obj.ideal_angles.items()
+                        }
+                    except YogaPoseDetails.DoesNotExist:
+                        ideal_angles = {}
 
-        shoulder_depth_diff = abs(float(row['LEFT_SHOULDER_z']) - float(row['RIGHT_SHOULDER_z']))
-        hip_depth_diff = abs(float(row['LEFT_HIP_z']) - float(row['RIGHT_HIP_z']))
-        knee_depth_diff = abs(float(row['LEFT_KNEE_z']) - float(row['RIGHT_KNEE_z']))
-        
-        wrist_depth_diff = abs(float(row['LEFT_WRIST_z']) - float(row['RIGHT_WRIST_z']))
-        elbow_depth_diff = abs(float(row['LEFT_ELBOW_z']) - float(row['RIGHT_ELBOW_z']))
+                    # Calculate errors
+                    errors = calculate_error(angles, ideal_angles)
+                    
+                    # Get pose classification
+                    landmarks = np.array([
+                        [lm.x, lm.y, lm.z] 
+                        for lm in results.pose_landmarks.landmark
+                    ])
+                    landmarks = landmarks.reshape(1, -1)
+                    predicted_pose = pose_classes[np.argmax(model.predict(landmarks))]
 
-        shoulder_height_diff = abs(float(row['LEFT_SHOULDER_y']) - float(row['RIGHT_SHOULDER_y']))
-        hip_height_diff = abs(float(row['LEFT_HIP_y']) - float(row['RIGHT_HIP_y']))
-        knee_height_diff = abs(float(row['LEFT_KNEE_y']) - float(row['RIGHT_KNEE_y']))
+                    # Get view classification
+                    view = classify_view({
+                        'LEFT_SHOULDER_z': landmarks[0][11*3+2],
+                        'RIGHT_SHOULDER_z': landmarks[0][12*3+2],
+                        'LEFT_HIP_z': landmarks[0][23*3+2],
+                        'RIGHT_HIP_z': landmarks[0][24*3+2],
+                        'LEFT_KNEE_z': landmarks[0][25*3+2],
+                        'RIGHT_KNEE_z': landmarks[0][26*3+2],
+                        'LEFT_WRIST_z': landmarks[0][15*3+2],
+                        'RIGHT_WRIST_z': landmarks[0][16*3+2]
+                    })
 
-        shoulder_hip_dist = abs(float(row['LEFT_SHOULDER_x']) - float(row['LEFT_HIP_x']))
-        knee_hip_dist = abs(float(row['LEFT_KNEE_x']) - float(row['LEFT_HIP_x']))
+                    # Calculate average error
+                    avg_error = sum(error['error'] for error in errors.values()) / len(errors)
 
-        pose = row.get("Pose", "").lower()
+                    # Generate corrections
+                    corrections = []
+                    for angle, error in errors.items():
+                        if error['error'] > 10:  # Only show corrections for significant errors
+                            if error['detected'] < error['ideal']:
+                                corrections.append(f"Extend your {angle.lower()} fully")
+                            else:
+                                corrections.append(f"Relax your {angle.lower()} slightly")
 
-        if (shoulder_depth_diff < 0.1 and hip_depth_diff < 0.1) and \
-           (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
-            
-            if knee_depth_diff < 0.1:
-                return "Front View (Perfect)"
-            
-            elif knee_depth_diff < 0.2:
-                return "Front View (Partial)"
-            
-            else:
-                return "Front View (Mixed)"
-        elif (shoulder_depth_diff > 0.5 and hip_depth_diff > 0.5) and \
-             (shoulder_height_diff < 0.2 and hip_height_diff < 0.2):
-            
-            if knee_depth_diff > 0.5:
-                return "Back View (Full)"
-            
-            elif knee_depth_diff > 0.3:
-                return "Back View (Partial)"
-            
-            else:
-                return "Back View (Mixed)"
+                    # Return JSON response
+                    return JsonResponse({
+                        'success': True,
+                        'annotated_image_url': f'/media/uploads/{image.name}',
+                        'predicted_pose': predicted_pose,
+                        'view': view,
+                        'best_match': predicted_pose,
+                        'avg_error': round(avg_error, 2),
+                        'corrections': corrections,
+                        'errors': errors
+                    })
 
-        elif (shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3) and \
-             (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
-            
-            # if shoulder_depth_diff > 0.6 and hip_depth_diff > 0.6:
-            #     return "Side View (Perfect - Full Profile)"
-            
-            if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
-                return "Side View (Perfect - Near Full)"
-            
-            elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
-                return "Side View (Perfect - Partial)"
-            
-            else:
-                return "Side View (Intermediate)"
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
-        elif (shoulder_depth_diff > 0.2 and hip_depth_diff > 0.2) and \
-             (shoulder_height_diff > 0.1 and hip_height_diff > 0.1):
-            
-            if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
-                return "Oblique View (Strong)"
-            
-            elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
-                return "Oblique View (Moderate)"
-            
-            else:
-                return "Oblique View (Mild)"
-
-        elif (wrist_depth_diff > 0.4 or elbow_depth_diff > 0.4):
-            
-            if wrist_depth_diff > 0.6 and elbow_depth_diff > 0.6:
-                return "Arm-Specific (Extended Side View)"
-            
-            elif wrist_depth_diff > 0.4:
-                return "Arm-Specific (Partial Extension)"
-            
-            else:
-                return "Arm-Specific (Mixed)"
-        else: 
-            return "Rare or Mixed View"
-        # elif (shoulder_depth_diff > 0.25 and hip_depth_diff > 0.25) and \
-        #      (shoulder_height_diff > 0.15 and hip_height_diff > 0.15):
-            
-        #     if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
-        #         return "Diagonal View (Strong)"
-            
-        #     elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
-        #         return "Diagonal View (Moderate)"
-            
-        #     else:
-        #         return "Diagonal View (Mild)"
-
-        # elif (shoulder_depth_diff > 0.2 and hip_depth_diff > 0.2) and \
-        #      (shoulder_height_diff > 0.1 and hip_height_diff > 0.1):
-            
-        #     if wrist_depth_diff > 0.3 and elbow_depth_diff > 0.3:
-        #         return "Hybrid View (Mixed)"
-            
-        #     else:
-        #         return "Hybrid View (Partial)"
-
-        # elif (shoulder_height_diff < 0.15 and hip_height_diff < 0.15) and \
-        #      (shoulder_depth_diff > 0.5 and hip_depth_diff > 0.5):
-            
-        #     return "Low-Angle View"
-
-        # elif (shoulder_height_diff > 0.5 and hip_height_diff > 0.5) and \
-        #      (shoulder_depth_diff < 0.2 and hip_depth_diff < 0.2):
-            
-        #     return "High-Angle View"
-
-        # else:
-            # return "Rare or Mixed View"
-
-    except Exception as e:
-        return f"Unknown View: {str(e)}"
-
-
-
-
-
-# def yoga_options(request, pose_name):
-#     context = {
-#         'pose_name': pose_name
-#     }
-#     return render(request, 'pose_selection/yoga_options.html', context)
+    return JsonResponse({
+        'success': False,
+        'error': 'No image uploaded'
+    }, status=400)
 
 
 def live_correction(request, pose_name):
@@ -822,3 +758,127 @@ def upload_image_for_pose(request):
 
     print("=== Returning upload form ===")
     return render(request, 'pose_selection/upload_image_pose.html')
+
+def classify_view(row):
+    """
+    Further Enhanced View Classification with more sub-categories.
+    """
+    try:
+        shoulder_angle = float(row['Left_Shoulder_Angle'])
+        hip_angle = float(row['Left_Hip_Angle'])
+        knee_angle = float(row['Left_Knee_Angle'])
+
+        shoulder_depth_diff = abs(float(row['LEFT_SHOULDER_z']) - float(row['RIGHT_SHOULDER_z']))
+        hip_depth_diff = abs(float(row['LEFT_HIP_z']) - float(row['RIGHT_HIP_z']))
+        knee_depth_diff = abs(float(row['LEFT_KNEE_z']) - float(row['RIGHT_KNEE_z']))
+        
+        wrist_depth_diff = abs(float(row['LEFT_WRIST_z']) - float(row['RIGHT_WRIST_z']))
+        elbow_depth_diff = abs(float(row['LEFT_ELBOW_z']) - float(row['RIGHT_ELBOW_z']))
+
+        shoulder_height_diff = abs(float(row['LEFT_SHOULDER_y']) - float(row['RIGHT_SHOULDER_y']))
+        hip_height_diff = abs(float(row['LEFT_HIP_y']) - float(row['RIGHT_HIP_y']))
+        knee_height_diff = abs(float(row['LEFT_KNEE_y']) - float(row['RIGHT_KNEE_y']))
+
+        shoulder_hip_dist = abs(float(row['LEFT_SHOULDER_x']) - float(row['LEFT_HIP_x']))
+        knee_hip_dist = abs(float(row['LEFT_KNEE_x']) - float(row['LEFT_HIP_x']))
+
+        pose = row.get("Pose", "").lower()
+
+        if (shoulder_depth_diff < 0.1 and hip_depth_diff < 0.1) and \
+           (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
+            
+            if knee_depth_diff < 0.1:
+                return "Front View (Perfect)"
+            
+            elif knee_depth_diff < 0.2:
+                return "Front View (Partial)"
+            
+            else:
+                return "Front View (Mixed)"
+        elif (shoulder_depth_diff > 0.5 and hip_depth_diff > 0.5) and \
+             (shoulder_height_diff < 0.2 and hip_height_diff < 0.2):
+            
+            if knee_depth_diff > 0.5:
+                return "Back View (Full)"
+            
+            elif knee_depth_diff > 0.3:
+                return "Back View (Partial)"
+            
+            else:
+                return "Back View (Mixed)"
+
+        elif (shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3) and \
+             (shoulder_height_diff < 0.1 and hip_height_diff < 0.1):
+            
+            # if shoulder_depth_diff > 0.6 and hip_depth_diff > 0.6:
+            #     return "Side View (Perfect - Full Profile)"
+            
+            if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
+                return "Side View (Perfect - Near Full)"
+            
+            elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
+                return "Side View (Perfect - Partial)"
+            
+            else:
+                return "Side View (Intermediate)"
+
+        elif (shoulder_depth_diff > 0.2 and hip_depth_diff > 0.2) and \
+             (shoulder_height_diff > 0.1 and hip_height_diff > 0.1):
+            
+            if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
+                return "Oblique View (Strong)"
+            
+            elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
+                return "Oblique View (Moderate)"
+            
+            else:
+                return "Oblique View (Mild)"
+
+        elif (wrist_depth_diff > 0.4 or elbow_depth_diff > 0.4):
+            
+            if wrist_depth_diff > 0.6 and elbow_depth_diff > 0.6:
+                return "Arm-Specific (Extended Side View)"
+            
+            elif wrist_depth_diff > 0.4:
+                return "Arm-Specific (Partial Extension)"
+            
+            else:
+                return "Arm-Specific (Mixed)"
+        else: 
+            return "Rare or Mixed View"
+        # elif (shoulder_depth_diff > 0.25 and hip_depth_diff > 0.25) and \
+        #      (shoulder_height_diff > 0.15 and hip_height_diff > 0.15):
+            
+        #     if shoulder_depth_diff > 0.4 and hip_depth_diff > 0.4:
+        #         return "Diagonal View (Strong)"
+            
+        #     elif shoulder_depth_diff > 0.3 and hip_depth_diff > 0.3:
+        #         return "Diagonal View (Moderate)"
+            
+        #     else:
+        #         return "Diagonal View (Mild)"
+
+        # elif (shoulder_depth_diff > 0.2 and hip_depth_diff > 0.2) and \
+        #      (shoulder_height_diff > 0.1 and hip_height_diff > 0.1):
+            
+        #     if wrist_depth_diff > 0.3 and elbow_depth_diff > 0.3:
+        #         return "Hybrid View (Mixed)"
+            
+        #     else:
+        #         return "Hybrid View (Partial)"
+
+        # elif (shoulder_height_diff < 0.15 and hip_height_diff < 0.15) and \
+        #      (shoulder_depth_diff > 0.5 and hip_depth_diff > 0.5):
+            
+        #     return "Low-Angle View"
+
+        # elif (shoulder_height_diff > 0.5 and hip_height_diff > 0.5) and \
+        #      (shoulder_depth_diff < 0.2 and hip_depth_diff < 0.2):
+            
+        #     return "High-Angle View"
+
+        # else:
+            # return "Rare or Mixed View"
+
+    except Exception as e:
+        return f"Unknown View: {str(e)}"
