@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+
+# Django
+*.log
+*.pot
+*.pyc
+*.sqlite3
+db.sqlite3
+local_settings.py
+media/
+staticfiles/
+
+# FastAPI
+instance/
+*.db
+
+# Environment & config
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains IDEs
+.idea/
+
+# Coverage/test
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# Supabase (if you download or sync configs)
+supabase/.temp/
+supabase/config.json
+supabase/migrations/
+
+# Video files / generated pose files
+*.mp4
+*.avi
+*.mov
+*.csv
+*.json
+
+# WebSocket logs
+logs/
+*.log
+__snapshots__/
